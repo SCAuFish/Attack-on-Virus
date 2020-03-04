@@ -3,9 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HW1", "HW0.vcxproj", "{742FF56B-60CE-4208-AA00-86A049B80282}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Final", "HW0.vcxproj", "{742FF56B-60CE-4208-AA00-86A049B80282}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8928CAA6-A4DC-41E1-ACC6-840676EB0F6F}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,9 +1,5 @@
 #include "Window.h"
 
-std::string bunnyFilename = ".\\Objects\\bunny.obj";
-std::string dragonFilename = ".\\Objects\\dragon.obj";
-std::string bearFilename = ".\\Objects\\bear.obj";
-
 // This order of cubemap texture should not be changed
 std::vector<char*> textureFiles = { ".\\skybox\\right.ppm", ".\\skybox\\left.ppm", ".\\skybox\\top.ppm",
 	".\\skybox\\bottom.ppm", ".\\skybox\\back.ppm", ".\\skybox\\front.ppm" };
@@ -104,18 +100,6 @@ void Window::addObjects(Object* toAdd) {
 
 bool Window::initializeObjects()
 {
-	robot = buildRobotArmy();
-	robot->setModelLoc(modelLoc);
-
-	curve[0] = new BezierCurve(glm::vec3(-3, -3, 1), glm::vec3(-2, -1, 3), glm::vec3(0, 1, 2), glm::vec3(2, 2, 4));
-	curve[1] = new BezierCurve(glm::vec3(2, 2, 4), glm::vec3(4, 3, 6), glm::vec3(3, 4, 2), glm::vec3(2, 2, 0));
-	curve[2] = new BezierCurve(glm::vec3(2, 2, 0), glm::vec3(1, 0, -2), glm::vec3(-3, -1, -4), glm::vec3(-4, -3, -5));
-	curve[3] = new BezierCurve(glm::vec3(-4, -3, -5), glm::vec3(-5, -5, -6), glm::vec3(-7, -4, -3), glm::vec3(-4, -2, -1));
-	curve[4] = new BezierCurve(glm::vec3(-4, -2, -1), glm::vec3(-1, 0, 1), glm::vec3(-4, -5, -1), glm::vec3(-3, -3, 1));
-	for (BezierCurve* c : curve) {
-		c->setModelLoc(modelLoc);
-	}
-
 	return true;
 }
 
@@ -216,8 +200,6 @@ void Window::displayCallback(GLFWwindow* window)
 {
 	// Update count to count period
 	updateCount = (updateCount + 1) % period;
-	curvePointCount = (curvePointCount + 1) % (5 * (pointCount + 1));
-	robot->update();
 
 	glUseProgram(skyboxProgram);
 	// Clear the color and depth buffers.
@@ -232,12 +214,7 @@ void Window::displayCallback(GLFWwindow* window)
 
 	// Draw objects
 	glUniform1i(drawSkyboxLoc, (GLuint) 0);
-	glm::mat4 robotArmyTranslation = glm::mat4(1.0f);
-	robotArmyTranslation[3] = glm::vec4(curve[curvePointCount / (pointCount + 1)]->points[curvePointCount % (pointCount + 1)], 1.0f);
-	robot->draw(robotArmyTranslation);
-	for (BezierCurve* c : curve) {
-		c->draw(glm::mat4(1.0f));
-	}
+	
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
