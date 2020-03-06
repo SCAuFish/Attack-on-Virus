@@ -1,5 +1,8 @@
 #include "Window.h"
 
+std::string virusFileName = ".\\Objects\\Coronavirus_processed.obj";
+std::string fighterFileName = ".\\Objects\\fighter_processed.obj";
+
 // This order of cubemap texture should not be changed
 std::vector<char*> textureFiles = { ".\\skybox\\right.ppm", ".\\skybox\\left.ppm", ".\\skybox\\top.ppm",
 	".\\skybox\\bottom.ppm", ".\\skybox\\back.ppm", ".\\skybox\\front.ppm" };
@@ -18,7 +21,7 @@ namespace
 
 	Skybox* skybox;
 
-	Geometry* bunny;
+	Geometry* virus, * fighter;
 	Transform* robot;
 	BezierCurve* curve[5];
 	int curvePointCount;
@@ -32,7 +35,7 @@ namespace
 	glm::vec3 up(0, 1, 0); // The up direction of the camera.
 	float fovy = 60;
 	float near = 1;
-	float far  = 1000;
+	float far = 1000;
 	glm::mat4 view = glm::lookAt(eye, center, up); // View matrix, defined by eye, center and up.
 	glm::mat4 projection; // Projection matrix.
 
@@ -43,12 +46,7 @@ namespace
 	GLuint modelLoc; // Location of model in shader.
 	GLuint drawSkyboxLoc;
 
-	bool mouseLeftPressed = false;
-	bool mouseRightPressed = false;
 	double prevX, prevY;
-	bool dirLightOn, pointLightOn;
-
-	bool rotateCamera = true;
 };
 
 void setShaderLoc() {
@@ -100,6 +98,27 @@ void Window::addObjects(Object* toAdd) {
 
 bool Window::initializeObjects()
 {
+	virus = new Geometry();
+	virus->loadObjFile(virusFileName);
+	virus->setModelLoc(modelLoc);
+
+	fighter = new Geometry();
+	fighter->loadObjFile(fighterFileName);
+	fighter->setModelLoc(modelLoc);
+
+	// Use this robot and curve to debug
+	robot = buildRobot();
+	robot->setModelLoc(modelLoc);
+
+	curve[0] = new BezierCurve(glm::vec3(-3, -3, 1), glm::vec3(-2, -1, 3), glm::vec3(0, 1, 2), glm::vec3(2, 2, 4));
+	curve[1] = new BezierCurve(glm::vec3(2, 2, 4), glm::vec3(4, 3, 6), glm::vec3(3, 4, 2), glm::vec3(2, 2, 0));
+	curve[2] = new BezierCurve(glm::vec3(2, 2, 0), glm::vec3(1, 0, -2), glm::vec3(-3, -1, -4), glm::vec3(-4, -3, -5));
+	curve[3] = new BezierCurve(glm::vec3(-4, -3, -5), glm::vec3(-5, -5, -6), glm::vec3(-7, -4, -3), glm::vec3(-4, -2, -1));
+	curve[4] = new BezierCurve(glm::vec3(-4, -2, -1), glm::vec3(-1, 0, 1), glm::vec3(-4, -5, -1), glm::vec3(-3, -3, 1));
+	for (BezierCurve* c : curve) {
+		c->setModelLoc(modelLoc);
+	}
+
 	return true;
 }
 
@@ -200,6 +219,8 @@ void Window::displayCallback(GLFWwindow* window)
 {
 	// Update count to count period
 	updateCount = (updateCount + 1) % period;
+	curvePointCount = (curvePointCount + 1) % (5 * (pointCount + 1));
+	robot->update();
 
 	glUseProgram(skyboxProgram);
 	// Clear the color and depth buffers.
@@ -213,8 +234,11 @@ void Window::displayCallback(GLFWwindow* window)
 	skybox->draw();
 
 	// Draw objects
-	glUniform1i(drawSkyboxLoc, (GLuint) 0);
-	
+	glUniform1i(drawSkyboxLoc, (GLuint)0);
+	glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, .0f, 10.f));
+	//robot->draw(robotArmyTranslation);
+	virus->draw(robotArmyTranslation);
+	fighter->draw(glm::translate(glm::vec3(.0f, 5.0f, 10.f)));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
@@ -231,142 +255,6 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 	{
 		switch (key)
 		{
-		//case GLFW_KEY_ESCAPE:
-		//	// Close the window. This causes the program to also terminate.
-		//	glfwSetWindowShouldClose(window, GL_TRUE);
-		//	break;
-
-		case GLFW_KEY_0:
-			rotateCamera = !rotateCamera;
-			break;
-
-		//case GLFW_KEY_1:
-		//	if (currentProgram != lightProgram) break;
-		//	glUniform1i(dirLightOnLoc, (GLuint)1);
-		//	glUniform1i(pointLightOnLoc, (GLuint)0);
-		//	dirLightOn = true;
-		//	pointLightOn = false;
-		//	controlledObject = currentObj;
-		//	break;
-
-		//case GLFW_KEY_2:
-		//	if (currentProgram != lightProgram) break;
-		//	glUniform1i(dirLightOnLoc, (GLuint)1);
-		//	glUniform1i(pointLightOnLoc, (GLuint)1);
-		//	dirLightOn = true;
-		//	pointLightOn = true;
-		//	break;
-
-		//case GLFW_KEY_3:
-		//	if (currentProgram != lightProgram) break;
-		//	break;
-
-		//case GLFW_KEY_4:
-		//	if (currentProgram != lightProgram) break;
-		//	dirLightOn = ! dirLightOn;
-		//	glUniform1i(dirLightOnLoc, (GLuint) dirLightOn);
-		//	break;
-
-		//case 'N':
-		//	programInd = (programInd + 1) % PROGRAM_COUNT;
-		//	currentProgram = programs[programInd];
-
-		//	setShaderLoc();
-		//	glUniform1i(dirLightOnLoc, (GLuint)1);
-		//	glUniform1i(pointLightOnLoc, (GLuint)0);
-		//	dirLightOn = true;
-		//	pointLightOn = false;
-		//	break;
-
-		//case 'P':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		if (mods) {
-		//			pcObject->updatePointSize(pcObject->getPointSize() + 1);
-		//		}
-		//		else {
-		//			pcObject->updatePointSize(pcObject->getPointSize() - 1);
-		//		}
-		//		current = current->next;
-		//	}
-		//	break;
-
-		//case 'A':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		pcObject->translate(-1, 0, 0);
-		//		current = current->next;
-		//	}
-		//	break;
-
-		//case 'D':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		pcObject->translate(1, 0, 0);
-		//		current = current->next;
-		//	}
-		//	break;
-
-		//case 'W':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		pcObject->translate(0, 1, 0);
-		//		current = current->next;
-		//	}
-		//	break;
-
-		//case 'X':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		pcObject->translate(0, -1, 0);
-		//		current = current->next;
-		//	}
-		//	break;
-
-		//case 'Z':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		if (mods) {
-		//			pcObject->translate(0, 0, 1);
-		//		}
-		//		else {
-		//			pcObject->translate(0, 0, -1);
-		//		}
-		//		current = current->next;
-		//	}
-		//	break;
-
-		case 'S':
-			if (mods) {
-				robot->M = glm::scale(robot->M, glm::vec3(1.1, 1.1, 1.1));
-			}
-			else {
-				robot->M = glm::scale(robot->M, glm::vec3(.9, .9, .9));
-			}
-			break;
-
-		//case 'R':
-		//	current = head;
-		//	while (current->curr) {
-		//		PointCloud* pcObject = (PointCloud*)current->curr;
-		//		if (mods) {
-		//			pcObject->cancelScaleAndRot();
-		//		}
-		//		else {
-		//			pcObject->cancelTranslate();
-		//		}
-		//		current = current->next;
-		//	}
-		//	break;
-
-		default:
-			break;
 		}
 	}
 }
@@ -374,10 +262,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 {
 	// Based on movement of cursor positions, generate rotate axis or translation axis
-	glm::mat4 matRoll  = glm::mat4(1.f);
+	glm::mat4 matRoll = glm::mat4(1.f);
 	glm::mat4 matPitch = glm::mat4(1.f);
-	matRoll  = glm::rotate(-glm::radians((float) (xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	matPitch = glm::rotate(-glm::radians((float) (yPos - prevY)) / 10.0f, glm::cross(center, up));
+	matRoll = glm::rotate(-glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	matPitch = glm::rotate(-glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
 	center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
 	up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
 	prevX = xPos;
@@ -390,26 +278,26 @@ void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int
 {
 	// Set mouseLeftPressed / mouseRightPressed when being pressed
 	// Record prevX and prevY for mouseLeftPressed with initial positions
-	if (button == GLFW_MOUSE_BUTTON_LEFT) {
-		if (action == GLFW_PRESS) {
-			mouseLeftPressed = true;
+	//if (button == GLFW_MOUSE_BUTTON_LEFT) {
+	//	if (action == GLFW_PRESS) {
+	//		mouseLeftPressed = true;
 
-			glfwGetCursorPos(window, &prevX, &prevY);
-		}
-		else if (action == GLFW_RELEASE) {
-			mouseLeftPressed = false;
-		}
-	}
-	else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-		if (action == GLFW_PRESS) {
-			mouseRightPressed = true;
+	//		glfwGetCursorPos(window, &prevX, &prevY);
+	//	}
+	//	else if (action == GLFW_RELEASE) {
+	//		mouseLeftPressed = false;
+	//	}
+	//}
+	//else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+	//	if (action == GLFW_PRESS) {
+	//		mouseRightPressed = true;
 
-			glfwGetCursorPos(window, &prevX, &prevY);
-		}
-		else if (action == GLFW_RELEASE) {
-			mouseRightPressed = false;
-		}
-	}
+	//		glfwGetCursorPos(window, &prevX, &prevY);
+	//	}
+	//	else if (action == GLFW_RELEASE) {
+	//		mouseRightPressed = false;
+	//	}
+	//}
 }
 
 void Window::scrollCallback(GLFWwindow* window, double xOffset, double yOffset)

@@ -7,6 +7,7 @@
 
 /**
  * when objFormat is 1: f v/vt/vn v/vt/vn v/vt/vn
+ * when objFormat is 2: f v/vt/vn and contains 4 vertices per surface
  */
 PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat,
 	float xShift, float yShift, float zShift)
