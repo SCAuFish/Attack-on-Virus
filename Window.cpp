@@ -27,12 +27,12 @@ namespace
 	//Object* currentObj, * controlledObject;
 	//Light* currentLight;
 
-	glm::vec3 eye(0, 0, 10); // Camera position.
-	glm::vec3 center(0, 0, 0); // The point we are looking at.
+	glm::vec3 eye(0, 0, 0); // Camera position.
+	glm::vec3 center(0, 0, 1); // The point we are looking at.
 	glm::vec3 up(0, 1, 0); // The up direction of the camera.
 	float fovy = 60;
 	float near = 1;
-	float far = 1000;
+	float far  = 1000;
 	glm::mat4 view = glm::lookAt(eye, center, up); // View matrix, defined by eye, center and up.
 	glm::mat4 projection; // Projection matrix.
 
@@ -374,31 +374,16 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 {
 	// Based on movement of cursor positions, generate rotate axis or translation axis
-	if (mouseLeftPressed) {
-		glm::vec3 previousPos = trackBallMapping(prevX, prevY);
-		glm::vec3 currentPos = trackBallMapping(xPos, yPos);
-		glm::vec3 rotateAxis = glm::vec4(glm::cross(previousPos, currentPos), .0f);
-		prevX = xPos;
-		prevY = yPos;
+	glm::mat4 matRoll  = glm::mat4(1.f);
+	glm::mat4 matPitch = glm::mat4(1.f);
+	matRoll  = glm::rotate(-glm::radians((float) (xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	matPitch = glm::rotate(-glm::radians((float) (yPos - prevY)) / 10.0f, glm::cross(center, up));
+	center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
+	up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
+	prevX = xPos;
+	prevY = yPos;
 
-		float radianAngle = glm::acos(std::min(std::abs(glm::dot(previousPos, currentPos)), 1.0f));
-
-		if (rotateCamera) {
-			// Control the camera, make it rotate slower
-			eye = glm::rotate(radianAngle / 5, rotateAxis) * glm::vec4(eye, 1.0f);
-			view = glm::lookAt(eye, center, up);
-		}
-		else {
-			robot->M = glm::rotate(robot->M, radianAngle, rotateAxis);
-		}
-	}
-
-	if (mouseRightPressed) {
-		// Translate x & y
-		//((PointCloud*)controlledObject)->translate((xPos - prevX) * 25 / width, (prevY - yPos) * 25 / height, 0);
-		prevX = xPos;
-		prevY = yPos;
-	}
+	view = glm::lookAt(eye, center, up);
 }
 
 void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)

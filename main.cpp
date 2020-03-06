@@ -8,6 +8,7 @@ void errorCallback(int error, const char* description)
 
 void setupCallbacks(GLFWwindow* window)
 {
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	// Set the error callback.
 	glfwSetErrorCallback(errorCallback);
 	// Set the key callback.
