@@ -238,7 +238,7 @@ void Window::displayCallback(GLFWwindow* window)
 	glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, .0f, 10.f));
 	//robot->draw(robotArmyTranslation);
 	virus->draw(robotArmyTranslation);
-	fighter->draw(glm::translate(glm::vec3(.0f, 5.0f, 10.f)));
+	fighter->draw(glm::translate(glm::vec3(.0f, -2.0f, 5.f)));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
