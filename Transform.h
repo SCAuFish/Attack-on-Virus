@@ -16,6 +16,7 @@ public:
 	std::vector<Node*> children;
 	void addChild(Node* child);
 	bool removeChild(Node* child);
+	void changeModel(glm::mat4 C);
 	void draw(glm::mat4 C);
 	void setModelLoc(GLuint modelLoc);
 	void update();

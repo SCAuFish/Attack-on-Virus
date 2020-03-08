@@ -18,6 +18,7 @@ class Node
 {
 public:
 	virtual void draw(glm::mat4 trans) = 0;
+	virtual void changeModel(glm::mat4 trans) = 0;
 	virtual void update() = 0;
 	virtual void setModelLoc(GLuint modelLoc) = 0;
 };

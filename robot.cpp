@@ -30,15 +30,15 @@ Transform* buildRobotArmy()
 Transform* buildRobot() {
 	// Load basic geometries
 	torsoGeo = new Geometry();
-	torsoGeo->loadObjFile(bodyFilename);
+	torsoGeo->loadObjFile(bodyFilename, 1);
 	limbGeo = new Geometry();
-	limbGeo->loadObjFile(limbFilename);
+	limbGeo->loadObjFile(limbFilename, 1);
 	headGeo = new Geometry();
-	headGeo->loadObjFile(headFilename);
+	headGeo->loadObjFile(headFilename, 1);
 	eyeGeo = new Geometry();
-	eyeGeo->loadObjFile(eyeFilename);
+	eyeGeo->loadObjFile(eyeFilename, 1);
 	antennaGeo = new Geometry();
-	antennaGeo->loadObjFile(antennaFilename);
+	antennaGeo->loadObjFile(antennaFilename, 1);
 
 	Transform* root = new Transform();
 

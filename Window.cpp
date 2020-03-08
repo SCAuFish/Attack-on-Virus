@@ -2,6 +2,8 @@
 
 std::string virusFileName = ".\\Objects\\Coronavirus_processed.obj";
 std::string fighterFileName = ".\\Objects\\fighter_processed.obj";
+std::string sphereFileName = ".\\Objects\\sphere.obj";
+
 
 // This order of cubemap texture should not be changed
 std::vector<char*> textureFiles = { ".\\skybox\\right.ppm", ".\\skybox\\left.ppm", ".\\skybox\\top.ppm",
@@ -17,27 +19,27 @@ ObjectPointerNode* Window::head, * Window::tail;
 namespace
 {
 	int width, height;
+	int hasBullet = 0, progress = 0;
 	std::string windowTitle("GLFW Starter Project");
 
 	Skybox* skybox;
 
-	Geometry* virus, * fighter;
+	Geometry* virus, * fighter, * bullet;
+	Transform* world;
 	Transform* robot;
 	BezierCurve* curve[5];
 	int curvePointCount;
 
-	//PointCloud* objectPoints;
-	//Object* currentObj, * controlledObject;
-	//Light* currentLight;
-
 	glm::vec3 eye(0, 0, 0); // Camera position.
-	glm::vec3 center(0, 0, 1); // The point we are looking at.
+	glm::vec3 center(0, -2, 5); // The point we are looking at.
+	glm::vec3 prev_center(0, 0, 1); // The point we are looking at.
 	glm::vec3 up(0, 1, 0); // The up direction of the camera.
 	float fovy = 60;
 	float near = 1;
 	float far = 1000;
 	glm::mat4 view = glm::lookAt(eye, center, up); // View matrix, defined by eye, center and up.
 	glm::mat4 projection; // Projection matrix.
+	glm::mat4 rot = glm::mat4(1.0f);
 
 	GLuint currentProgram, skyboxProgram; // The shader program id.
 
@@ -99,34 +101,29 @@ void Window::addObjects(Object* toAdd) {
 bool Window::initializeObjects()
 {
 	virus = new Geometry();
-	virus->loadObjFile(virusFileName);
+	virus->loadObjFile(virusFileName, 1);
 	virus->setModelLoc(modelLoc);
 
 	fighter = new Geometry();
-	fighter->loadObjFile(fighterFileName);
+	fighter->loadObjFile(fighterFileName, 1);
 	fighter->setModelLoc(modelLoc);
-	fighter->object->translate(.0f, -2.0f, 5.f);
+	fighter->changeModel(glm::translate(glm::vec3(0.0f, -2.0f, 5.0f)));
 
-	// Use this robot and curve to debug
-	robot = buildRobot();
-	robot->setModelLoc(modelLoc);
-
-	curve[0] = new BezierCurve(glm::vec3(-3, -3, 1), glm::vec3(-2, -1, 3), glm::vec3(0, 1, 2), glm::vec3(2, 2, 4));
-	curve[1] = new BezierCurve(glm::vec3(2, 2, 4), glm::vec3(4, 3, 6), glm::vec3(3, 4, 2), glm::vec3(2, 2, 0));
-	curve[2] = new BezierCurve(glm::vec3(2, 2, 0), glm::vec3(1, 0, -2), glm::vec3(-3, -1, -4), glm::vec3(-4, -3, -5));
-	curve[3] = new BezierCurve(glm::vec3(-4, -3, -5), glm::vec3(-5, -5, -6), glm::vec3(-7, -4, -3), glm::vec3(-4, -2, -1));
-	curve[4] = new BezierCurve(glm::vec3(-4, -2, -1), glm::vec3(-1, 0, 1), glm::vec3(-4, -5, -1), glm::vec3(-3, -3, 1));
-	for (BezierCurve* c : curve) {
-		c->setModelLoc(modelLoc);
-	}
-
+	world = new Transform();
+	world->addChild(virus);
+	
+	bullet = new Geometry();
+	bullet->loadObjFile(sphereFileName, 0);
+	printf("here\n");
+	bullet->setModelLoc(modelLoc);
+	
 	return true;
 }
 
 void Window::cleanUp()
 {
 	// Deallcoate the objects.
-	delete skybox;
+	//delete skybox;
 	glDeleteProgram(skyboxProgram);
 }
 
@@ -208,12 +205,24 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 
 void Window::idleCallback()
 {
-	// Perform any updates as necessary.
-	/*ObjectPointerNode* current = head;
-	while (current->curr) {
-		current->curr->update();
-		current = current->next;
-	}*/
+	if (hasBullet) {
+		progress++;
+		bullet->object->model = glm::translate(bullet->object->model, glm::vec3(.0f, .0f, 0.6f));
+		if (progress > 300) hasBullet = 0;
+	}
+}
+
+void Window::launchBullet() {
+	hasBullet = 1;
+	progress = 0;
+	bullet = new Geometry();
+	bullet->loadObjFile(sphereFileName, 0);
+	bullet->setModelLoc(modelLoc);
+	bullet->object->model = fighter->object->model;
+	bullet->object->model = glm::scale(bullet->object->model, glm::vec3(0.2f, 0.2f, 0.2f));
+	glUniform1i(drawSkyboxLoc, (GLuint)0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bullet->object->model));
+	bullet->draw(glm::mat4(1.0f));
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -221,7 +230,7 @@ void Window::displayCallback(GLFWwindow* window)
 	// Update count to count period
 	updateCount = (updateCount + 1) % period;
 	curvePointCount = (curvePointCount + 1) % (5 * (pointCount + 1));
-	robot->update();
+	//robot->update();
 
 	glUseProgram(skyboxProgram);
 	// Clear the color and depth buffers.
@@ -236,10 +245,15 @@ void Window::displayCallback(GLFWwindow* window)
 
 	// Draw objects
 	glUniform1i(drawSkyboxLoc, (GLuint)0);
-	glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, .0f, 10.f));
-	//robot->draw(robotArmyTranslation);
+	glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, 0.0f, 10.f));
+	//bullet->draw(robotArmyTranslation);
 	virus->draw(robotArmyTranslation);
-	fighter->draw(glm::mat4(1.f));
+	fighter->draw(glm::mat4(1.0f));
+
+	// Draw bullet 
+	if (hasBullet) {
+		bullet->draw(glm::mat4(1.0f));
+	}
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
@@ -256,6 +270,21 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 	{
 		switch (key)
 		{
+			case GLFW_KEY_ESCAPE:
+				glfwSetWindowShouldClose(window, GL_TRUE);
+				break;
+			case GLFW_KEY_W:
+				glm::vec3 dir = glm::normalize(center - eye);
+				dir = rot * glm::vec4(dir, 1.0f);
+				skybox->model = glm::translate(glm::vec3(-10 * dir[0], -10 * dir[1], -10 * dir[2])) * skybox->model;
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
+				skybox->draw();
+				world->changeModel(glm::translate(glm::vec3(-1 * dir[0], -1 * dir[1], -1 * dir[2])));
+				world->draw(glm::mat4(1.0f));
+				break;
+			case GLFW_KEY_ENTER:
+				launchBullet();
+				break;
 		}
 	}
 }
@@ -267,15 +296,19 @@ void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 	glm::mat4 matPitch = glm::mat4(1.f);
 	matRoll = glm::rotate(-glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	matPitch = glm::rotate(-glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
-	center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
-	up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
-
-	fighter->object->model = matRoll * matPitch * fighter->object->model;
-
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
+		rot = matRoll * matPitch * rot;
+	}
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		fighter->changeModel(matRoll * matPitch);
+		center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
+		up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
+		view = glm::lookAt(eye, center, up);
+	}
 	prevX = xPos;
 	prevY = yPos;
-
-	view = glm::lookAt(eye, center, up);
 }
 
 void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)

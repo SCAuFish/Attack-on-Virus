@@ -34,6 +34,12 @@ bool Transform::removeChild(Node* child)
 	return false;
 }
 
+void Transform::changeModel(glm::mat4 C) {
+	for (Node* child : this->children) {
+		child->changeModel(C);
+	}
+}
+
 void Transform::draw(glm::mat4 C)
 {
 	glm::mat4 accumulated = C * (this->M);

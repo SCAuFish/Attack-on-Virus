@@ -56,6 +56,7 @@ public:
 	static void resizeCallback(GLFWwindow* window, int width, int height);
 	// Is called on idle.
 	static void idleCallback();
+	static void launchBullet();
 	// This renders to the glfw window. Add draw calls here
 	static void displayCallback(GLFWwindow*);
 	// Add your key press event handling here

@@ -16,8 +16,9 @@ public:
 
 	void sendModelToShader(glm::mat4 model);
 	PointCloud* object;
-	void loadObjFile(std::string filename);
+	void loadObjFile(std::string filename, int mode);
 	void draw(glm::mat4 C);
+	void changeModel(glm::mat4 C);
 	void setModelLoc(GLuint modelLoc);
 	void update();
 };
