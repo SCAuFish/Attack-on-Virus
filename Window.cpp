@@ -105,6 +105,7 @@ bool Window::initializeObjects()
 	fighter = new Geometry();
 	fighter->loadObjFile(fighterFileName);
 	fighter->setModelLoc(modelLoc);
+	fighter->object->translate(.0f, -2.0f, 5.f);
 
 	// Use this robot and curve to debug
 	robot = buildRobot();
@@ -238,7 +239,7 @@ void Window::displayCallback(GLFWwindow* window)
 	glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, .0f, 10.f));
 	//robot->draw(robotArmyTranslation);
 	virus->draw(robotArmyTranslation);
-	fighter->draw(glm::translate(glm::vec3(.0f, -2.0f, 5.f)));
+	fighter->draw(glm::mat4(1.f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
@@ -268,6 +269,9 @@ void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 	matPitch = glm::rotate(-glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
 	center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
 	up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
+
+	fighter->object->model = matRoll * matPitch * fighter->object->model;
+
 	prevX = xPos;
 	prevY = yPos;
 
