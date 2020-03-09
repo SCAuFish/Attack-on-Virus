@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <gl/glu.h> 
 #include <iostream>
 #include <vector>
 #include <string>
@@ -33,6 +34,7 @@
 #include "Transform.h"
 #include "robot.h"
 #include "BezierCurve.h"
+#include "Cloud.h"
 
 struct ObjectPointerNode {
 	Object* curr;
@@ -65,7 +67,7 @@ public:
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 	static glm::vec3 trackBallMapping(double xPos, double yPos);
-	unsigned int loadCubemap(std::vector<std::string> faces);
+	//unsigned int loadCubemap(std::vector<std::string> faces);
 };
 
 #endif

@@ -27,12 +27,15 @@ namespace
 	Geometry* virus, * fighter, * bullet;
 	Transform* world;
 	Transform* robot;
+	bool isMovingForward = false;
+
+	Cloud* cloud;
+	unsigned char texture[256][256][3];       //Temporary array to hold texture RGB values 
 	BezierCurve* curve[5];
 	int curvePointCount;
 
 	glm::vec3 eye(0, 0, 0); // Camera position.
-	glm::vec3 center(0, -2, 5); // The point we are looking at.
-	glm::vec3 prev_center(0, 0, 1); // The point we are looking at.
+	glm::vec3 center(0, 0, 1); // The point we are looking at.
 	glm::vec3 up(0, 1, 0); // The up direction of the camera.
 	float fovy = 60;
 	float near = 1;
@@ -60,6 +63,41 @@ void setShaderLoc() {
 
 	drawSkyboxLoc = glGetUniformLocation(currentProgram, "drawSkybox");
 
+}
+
+void initializeCloudTexture() {
+	for (int i = 0; i < 256; i++)         //Set cloud color value to temporary array
+		for (int j = 0; j < 256; j++)
+		{
+			unsigned char color = (unsigned char)cloud->cloudMap[i * 256 + j];
+			//texture[i * 256 * 256 + j * 256 + 0] = color;
+			//texture[i * 256 * 256 + j * 256 + 1] = color;
+			//texture[i * 256 * 256 + j * 256 + 2] = color;
+			//texture[i][j][0] = color;
+			//texture[i][j][1] = color;
+			//texture[i][j][2] = color;
+			texture[i][j][0] = 0;
+			texture[i][j][1] = 0;
+			texture[i][j][2] = 0;
+		}
+
+	unsigned int ID;                 //Generate an ID for texture binding                     
+	glGenTextures(1, &ID);           //Texture binding 
+	glBindTexture(GL_TEXTURE_2D, ID);
+	////glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 256, 256, 1);
+	////glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 256, 256, 1, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, &texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 1024, 1024, 0, (GLenum)GL_RGB, GL_FLOAT, 0);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//GLint returnValue = gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, texture);
+	//std::cout << "return from building mipmap: " << returnValue << std::endl;
 }
 
 bool Window::initializeProgram()
@@ -103,6 +141,7 @@ bool Window::initializeObjects()
 	virus = new Geometry();
 	virus->loadObjFile(virusFileName, 1);
 	virus->setModelLoc(modelLoc);
+	virus->changeModel(glm::translate(glm::vec3(.0f, .0f, 10.f)));
 
 	fighter = new Geometry();
 	fighter->loadObjFile(fighterFileName, 1);
@@ -111,12 +150,15 @@ bool Window::initializeObjects()
 
 	world = new Transform();
 	world->addChild(virus);
-	
+
 	bullet = new Geometry();
 	bullet->loadObjFile(sphereFileName, 0);
-	printf("here\n");
 	bullet->setModelLoc(modelLoc);
-	
+
+	cloud = new Cloud();
+	cloud->overlapOctaves();
+	cloud->ExpFilter();
+	initializeCloudTexture();
 	return true;
 }
 
@@ -203,12 +245,24 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 		(float)width / (float)height, near, far);
 }
 
+void moveForward() {
+	// Move the world to the opposite direction of aircraft moving
+	glm::vec3 dir = glm::normalize(center - eye);
+	world->changeModel(glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])));
+	//world->draw(glm::mat4(1.0f));
+}
+
 void Window::idleCallback()
 {
+	world->draw(glm::mat4(1.0f));
 	if (hasBullet) {
 		progress++;
 		bullet->object->model = glm::translate(bullet->object->model, glm::vec3(.0f, .0f, 0.6f));
 		if (progress > 300) hasBullet = 0;
+	}
+
+	if (isMovingForward) {
+		moveForward();
 	}
 }
 
@@ -243,11 +297,15 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
 	skybox->draw();
 
+	// Draw cloud skybox
+	glUniform1i(drawSkyboxLoc, (GLuint)2);
+	skybox->draw();
+
 	// Draw objects
 	glUniform1i(drawSkyboxLoc, (GLuint)0);
-	glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, 0.0f, 10.f));
+	//glm::mat4 robotArmyTranslation = glm::translate(glm::vec3(.0f, 0.0f, 10.f));
 	//bullet->draw(robotArmyTranslation);
-	virus->draw(robotArmyTranslation);
+	world->draw(glm::mat4(1.0f));
 	fighter->draw(glm::mat4(1.0f));
 
 	// Draw bullet 
@@ -270,21 +328,22 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 	{
 		switch (key)
 		{
-			case GLFW_KEY_ESCAPE:
-				glfwSetWindowShouldClose(window, GL_TRUE);
-				break;
-			case GLFW_KEY_W:
-				glm::vec3 dir = glm::normalize(center - eye);
-				dir = rot * glm::vec4(dir, 1.0f);
-				skybox->model = glm::translate(glm::vec3(-10 * dir[0], -10 * dir[1], -10 * dir[2])) * skybox->model;
-				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
-				skybox->draw();
-				world->changeModel(glm::translate(glm::vec3(-1 * dir[0], -1 * dir[1], -1 * dir[2])));
-				world->draw(glm::mat4(1.0f));
-				break;
-			case GLFW_KEY_ENTER:
-				launchBullet();
-				break;
+		case GLFW_KEY_ESCAPE:
+			glfwSetWindowShouldClose(window, GL_TRUE);
+			break;
+		case GLFW_KEY_W:
+			isMovingForward = true;
+			break;
+		case GLFW_KEY_ENTER:
+			launchBullet();
+			break;
+		}
+	}
+	else if (action == GLFW_RELEASE) {
+		switch (key) {
+		case GLFW_KEY_W:
+			isMovingForward = false;
+			break;
 		}
 	}
 }
@@ -296,17 +355,15 @@ void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 	glm::mat4 matPitch = glm::mat4(1.f);
 	matRoll = glm::rotate(-glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	matPitch = glm::rotate(-glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-		fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-		fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
-		rot = matRoll * matPitch * rot;
-	}
-	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		fighter->changeModel(matRoll * matPitch);
-		center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
-		up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
-		view = glm::lookAt(eye, center, up);
-	}
+
+	//fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
+	//fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	rot = matRoll * matPitch * rot;
+	fighter->changeModel(matRoll * matPitch);
+	center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
+	up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
+	view = glm::lookAt(eye, center, up);
+
 	prevX = xPos;
 	prevY = yPos;
 }
