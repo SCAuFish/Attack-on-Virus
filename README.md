@@ -9,7 +9,7 @@ Here are some updates
 3. For the third technical features we successfully enabled the functionality to launch bullets from the aircraft. Afterwards we will enable collision detection of the bullet with arbitrary geometry and generate visual effects if that occurs.
 
 The following screenshot shows the effect of the procedually generated cloud: 
-![Image of Cloud](./Pictures/plane_with_cloud.PNG)
+![Image of Cloud](./Pictures/plane_with_cloud.png)
 
 # Blog March 3rd
 Today we will introduce some basic ideas and features that will be involved in this project. \
