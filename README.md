@@ -16,3 +16,10 @@ The following two images are basic models that we will use (the fighter and the 
 ![Image of Virus](./Pictures/fighter_screenshot.PNG)
 
 Finally, credit to our two contributors: Cheng Shen and Manxue Li
+
+# Blog March 9th
+1. In the previous six days we completed the implementation of first-person view control, whereby thge player can controls the aircraft itself and the view of the aircraft by left mouse button and right mouse button respectively. 
+2. We also started on procedurally generating animated clouds. Currently we are able to generate the cloud and incorporate the cloud with the original skybox background. The next step for this technical feature would be making the generated cloud animated. 
+3. For the third technical features we successfully enabled the functionality to launch bullets from the aircraft. Afterwards we will enable collision detection of the bullet with arbitrary geometry and generate visual effects if that occurs. 
+The following screenshot shows the effect of the procedually generated cloud: 
+
