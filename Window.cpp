@@ -30,6 +30,7 @@ namespace
 	bool isMovingForward = false;
 
 	Cloud* cloud;
+	bool showCloud;
 	unsigned char texture[256][256][3];       //Temporary array to hold texture RGB values 
 	BezierCurve* curve[5];
 	int curvePointCount;
@@ -50,6 +51,7 @@ namespace
 	GLuint viewLoc; // Location of view in shader.
 	GLuint modelLoc; // Location of model in shader.
 	GLuint drawSkyboxLoc;
+	GLuint showCloudLoc;
 
 	double prevX, prevY;
 };
@@ -62,42 +64,7 @@ void setShaderLoc() {
 	modelLoc = glGetUniformLocation(currentProgram, "model");
 
 	drawSkyboxLoc = glGetUniformLocation(currentProgram, "drawSkybox");
-
-}
-
-void initializeCloudTexture() {
-	for (int i = 0; i < 256; i++)         //Set cloud color value to temporary array
-		for (int j = 0; j < 256; j++)
-		{
-			unsigned char color = (unsigned char)cloud->cloudMap[i * 256 + j];
-			//texture[i * 256 * 256 + j * 256 + 0] = color;
-			//texture[i * 256 * 256 + j * 256 + 1] = color;
-			//texture[i * 256 * 256 + j * 256 + 2] = color;
-			//texture[i][j][0] = color;
-			//texture[i][j][1] = color;
-			//texture[i][j][2] = color;
-			texture[i][j][0] = 0;
-			texture[i][j][1] = 0;
-			texture[i][j][2] = 0;
-		}
-
-	unsigned int ID;                 //Generate an ID for texture binding                     
-	glGenTextures(1, &ID);           //Texture binding 
-	glBindTexture(GL_TEXTURE_2D, ID);
-	////glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 256, 256, 1);
-	////glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 256, 256, 1, GL_RGBA, GL_UNSIGNED_BYTE, texture);
-
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, &texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 1024, 1024, 0, (GLenum)GL_RGB, GL_FLOAT, 0);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	//GLint returnValue = gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, texture);
-	//std::cout << "return from building mipmap: " << returnValue << std::endl;
+	showCloudLoc = glGetUniformLocation(currentProgram, "showCloud");
 }
 
 bool Window::initializeProgram()
@@ -155,10 +122,6 @@ bool Window::initializeObjects()
 	bullet->loadObjFile(sphereFileName, 0);
 	bullet->setModelLoc(modelLoc);
 
-	cloud = new Cloud();
-	cloud->overlapOctaves();
-	cloud->ExpFilter();
-	initializeCloudTexture();
 	return true;
 }
 
@@ -290,16 +253,19 @@ void Window::displayCallback(GLFWwindow* window)
 	// Clear the color and depth buffers.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Draw skybox first
+	// Draw cloud skybox
 	glUniform1i(drawSkyboxLoc, (GLuint)1);
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
 	skybox->draw();
 
-	// Draw cloud skybox
-	glUniform1i(drawSkyboxLoc, (GLuint)2);
-	skybox->draw();
+	// Draw skybox first
+	//glUniform1i(drawSkyboxLoc, (GLuint)1);
+	//glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
+	//skybox->draw();
 
 	// Draw objects
 	glUniform1i(drawSkyboxLoc, (GLuint)0);
@@ -337,6 +303,15 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 		case GLFW_KEY_ENTER:
 			launchBullet();
 			break;
+		case GLFW_KEY_C:
+			if (showCloud) {
+				glUniform1i(showCloudLoc, (GLuint)0);
+				showCloud = !showCloud;
+			}
+			else {
+				glUniform1i(showCloudLoc, (GLuint)1);
+				showCloud = !showCloud;
+			}
 		}
 	}
 	else if (action == GLFW_RELEASE) {

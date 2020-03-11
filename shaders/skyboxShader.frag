@@ -31,34 +31,37 @@ uniform samplerCube skybox;
 uniform sampler2D cloud;
 
 uniform int drawSkybox;
-
+uniform int showCloud;
 
 void main()
 {
+    vec4 cloudColor;
     // Use the color passed in. An alpha of 1.0f means it is not transparent.
     if (drawSkybox == 1){
         fragColor = texture(skybox, TexCoords);
-    } else if (drawSkybox == 2){
         // Painting cloud
         // Atmosphere Scattering
         float mu = dot(normalize(pos), normalize(fsun));
         vec3 extinction = mix(exp(-exp(-((pos.y + fsun.y * 4.0) * (exp(-pos.y * 16.0) + 0.1) / 80.0) / Br) * (exp(-pos.y * 16.0) + 0.1) * Kr / Br) * exp(-pos.y * exp(-pos.y * 8.0 ) * 4.0) * exp(-pos.y * 2.0) * 4.0, vec3(1.0 - exp(fsun.y)) * 0.2, -fsun.y * 0.2 + 0.5);
-        fragColor.rgb = 3.0 / (8.0 * 3.14) * (1.0 + mu * mu) * (Kr + Km * (1.0 - g * g) / (2.0 + g * g) / pow(1.0 + g * g - 2.0 * g * mu, 1.5)) / (Br + Bm) * extinction;
+        cloudColor.rgb = 3.0 / (8.0 * 3.14) * (1.0 + mu * mu) * (Kr + Km * (1.0 - g * g) / (2.0 + g * g) / pow(1.0 + g * g - 2.0 * g * mu, 1.5)) / (Br + Bm) * extinction;
 
         // Cirrus Clouds
         float density = smoothstep(1.0 - cirrus, 1.0, fbm(pos.xyz / pos.y * 2.0 + time * 0.05)) * 0.3;
-        fragColor.rgb = mix(fragColor.rgb, extinction * 4.0, density * max(pos.y, 0.0));
+        cloudColor.rgb = mix(cloudColor.rgb, extinction * 4.0, density * max(pos.y, 0.0));
 
         // Cumulus Clouds
         for (int i = 0; i < 3; i++)
         {
           float density = smoothstep(1.0 - cumulus, 1.0, fbm((0.7 + float(i) * 0.01) * pos.xyz / pos.y + time * 0.3));
-          fragColor.rgb = mix(fragColor.rgb, extinction * density * 5.0, min(density, 1.0) * max(pos.y, 0.0));
+          cloudColor.rgb = mix(cloudColor.rgb, extinction * density * 5.0, min(density, 1.0) * max(pos.y, 0.0));
         }
 
         // Dithering Noise
-        fragColor.rgb += noise(pos * 1000) * 0.01;
-        fragColor.a = 0;
+        cloudColor.rgb += noise(pos * 1000) * 0.01;
+        cloudColor.w = fragColor.w;
+        if (showCloud == 1){
+            fragColor = cloudColor * 0.6 + fragColor * 0.5;
+        }
     } else {
         // Use the color passed in. An alpha of 1.0f means it is not transparent.
         fragColor = vec4(colorInfo, 1.0f);

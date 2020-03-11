@@ -22,22 +22,30 @@ out vec3 TexCoords;
 out vec3 pos;
 out vec3 fsun;
 
-const vec2 data[4] = vec2[](
-    vec2(-1.0,  1.0), vec2(-1.0, -1.0),
-    vec2( 1.0, -1.0), vec2( 1.0,  1.0));
-
 void main()
 {
-    if (drawSkybox == 2){
-        // drawing cloud
-        gl_Position = vec4(data[gl_VertexID], 0.0, 1.0);
-        pos = transpose(mat3(view)) * (inverse(projection) * gl_Position).xyz;
-        fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
-    } else {
-        // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
-        gl_Position = projection * view * model * vec4(position, 1.0);
-        TexCoords   = position;
-        
-        colorInfo   = 0.5*normalize(normal)+0.5;
-    }
+
+    
+    // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
+    gl_Position = projection * view * model * vec4(position, 1.0);
+    // divide by size of the skybox
+    pos = transpose(mat3(view)) * (inverse(projection) * gl_Position / 2048).xyz;
+    fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
+    TexCoords   = position;
+    
+    colorInfo   = 0.5*normalize(normal)+0.5;
+
+    // Correct if painting separately
+//    if (drawSkybox == 2){
+//        // drawing cloud
+//        gl_Position = vec4(data[gl_VertexID], 0.0, 1.0);
+//        pos = transpose(mat3(view)) * (inverse(projection) * gl_Position).xyz;
+//        fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
+//    } else {
+//        // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
+//        gl_Position = projection * view * model * vec4(position, 1.0);
+//        TexCoords   = position;
+//        
+//        colorInfo   = 0.5*normalize(normal)+0.5;
+//    }
 }
