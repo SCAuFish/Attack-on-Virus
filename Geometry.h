@@ -4,6 +4,7 @@
 #include "Node.h"
 #include "PointCloud.h"
 #include <string>
+#include "SpaceTree.h"
 
 class Geometry :
 	public Node

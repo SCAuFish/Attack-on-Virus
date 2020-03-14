@@ -116,6 +116,8 @@
     <ClCompile Include="robot.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="Skybox.cpp" />
+    <ClCompile Include="SpaceTree.cpp" />
+    <ClCompile Include="SpaceTreeNode.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -138,6 +140,8 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="Skybox.h" />
+    <ClInclude Include="SpaceTree.h" />
+    <ClInclude Include="SpaceTreeNode.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Window.h" />

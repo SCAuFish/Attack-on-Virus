@@ -24,10 +24,15 @@ namespace
 
 	Skybox* skybox;
 
-	Geometry* virus, * fighter, * bullet;
+	// Transforms in objList should be the level right above the geometry
+	std::vector<Transform*> objList;
+	Geometry* virusGeo, * fighterGeo, * bulletGeo;
+	Transform* virus, * fighter, * bullet;
 	Transform* world;
 	Transform* robot;
 	bool isMovingForward = false;
+	bool pauseCloud = false;
+	float cloudTime = 0;
 
 	Cloud* cloud;
 	bool showCloud;
@@ -52,6 +57,8 @@ namespace
 	GLuint modelLoc; // Location of model in shader.
 	GLuint drawSkyboxLoc;
 	GLuint showCloudLoc;
+	GLuint timeLoc;
+	GLuint hashSeedLoc;
 
 	double prevX, prevY;
 };
@@ -65,6 +72,8 @@ void setShaderLoc() {
 
 	drawSkyboxLoc = glGetUniformLocation(currentProgram, "drawSkybox");
 	showCloudLoc = glGetUniformLocation(currentProgram, "showCloud");
+	timeLoc = glGetUniformLocation(currentProgram, "time");
+	hashSeedLoc = glGetUniformLocation(currentProgram, "hashSeed");
 }
 
 bool Window::initializeProgram()
@@ -90,38 +99,35 @@ bool Window::initializeProgram()
 	return true;
 }
 
-void Window::addObjects(Object* toAdd) {
-	if (head == nullptr) {
-		head = new ObjectPointerNode();
-		head->curr = toAdd;
-		tail = head;
-	}
-
-	tail->next = new ObjectPointerNode();
-	tail->curr = toAdd;
-
-	tail = tail->next;
-}
-
 bool Window::initializeObjects()
 {
-	virus = new Geometry();
-	virus->loadObjFile(virusFileName, 1);
-	virus->setModelLoc(modelLoc);
-	virus->changeModel(glm::translate(glm::vec3(.0f, .0f, 10.f)));
+	// Create one virus
+	virusGeo = new Geometry();
+	virusGeo->loadObjFile(virusFileName, 1);
+	virusGeo->setModelLoc(modelLoc);
 
-	fighter = new Geometry();
-	fighter->loadObjFile(fighterFileName, 1);
-	fighter->setModelLoc(modelLoc);
-	fighter->changeModel(glm::translate(glm::vec3(0.0f, -2.0f, 5.0f)));
+	virus = new Transform();
+	virus->addChild(virusGeo);
+	virus->M = glm::scale(glm::vec3(5.0f, 5.0f, 5.0f)) * glm::translate(glm::vec3(0.0f, -2.0f, 5.0f)) * virus->M;
+	objList.push_back(virus);
+
+	// Create one fighter
+	fighterGeo = new Geometry();
+	fighterGeo->loadObjFile(fighterFileName, 1);
+	fighterGeo->setModelLoc(modelLoc);
+
+	fighter = new Transform();
+	fighter->addChild(fighterGeo);
+	fighter->M = glm::translate(glm::vec3(0.0f, -2.0f, 5.0f)) * fighter->M;
+	objList.push_back(fighter);
 
 	world = new Transform();
 	world->addChild(virus);
 
-	bullet = new Geometry();
-	bullet->loadObjFile(sphereFileName, 0);
-	bullet->setModelLoc(modelLoc);
-
+	bulletGeo = new Geometry();
+	bulletGeo->loadObjFile(sphereFileName, 0);
+	bulletGeo->setModelLoc(modelLoc);
+	
 	return true;
 }
 
@@ -211,8 +217,24 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 void moveForward() {
 	// Move the world to the opposite direction of aircraft moving
 	glm::vec3 dir = glm::normalize(center - eye);
-	world->changeModel(glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])));
-	//world->draw(glm::mat4(1.0f));
+	world->M = glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])) * world->M;
+	// world->changeModel(glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])));
+	// world->draw(glm::mat4(1.0f));
+	// skybox->model = glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])) * skybox->model;
+}
+
+bool Window::hasCollision(std::vector<Transform*> objs)
+{
+	for (int i = 0; i < objs.size(); i++) {
+		for (int j = i + 1; j < objs.size(); j++) {
+			Transform* lhs = objs[i];
+			Transform* rhs = objs[j];
+			if (lhs->children[0]->kdTree->intersectWith(rhs->children[0]->kdTree, lhs->prevAccumulatedM, rhs->prevAccumulatedM) )
+				return true;
+		}
+	}
+
+	return false;
 }
 
 void Window::idleCallback()
@@ -220,25 +242,28 @@ void Window::idleCallback()
 	world->draw(glm::mat4(1.0f));
 	if (hasBullet) {
 		progress++;
-		bullet->object->model = glm::translate(bullet->object->model, glm::vec3(.0f, .0f, 0.6f));
+		bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 0.6f));
 		if (progress > 300) hasBullet = 0;
 	}
 
 	if (isMovingForward) {
 		moveForward();
 	}
+
+	if (hasCollision(objList)) {
+		std::cout << rand() << std::endl;
+	}
 }
 
 void Window::launchBullet() {
 	hasBullet = 1;
 	progress = 0;
-	bullet = new Geometry();
-	bullet->loadObjFile(sphereFileName, 0);
-	bullet->setModelLoc(modelLoc);
-	bullet->object->model = fighter->object->model;
-	bullet->object->model = glm::scale(bullet->object->model, glm::vec3(0.2f, 0.2f, 0.2f));
-	glUniform1i(drawSkyboxLoc, (GLuint)0);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bullet->object->model));
+	bullet = new Transform();
+	bullet->addChild(bulletGeo);
+	// objList.push_back(bullet);
+
+	bullet->M = fighter->M;
+	bullet->M = glm::scale(bullet->M, glm::vec3(0.2f, 0.2f, 0.2f));
 	bullet->draw(glm::mat4(1.0f));
 }
 
@@ -258,14 +283,11 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
+	if (!pauseCloud){
+		cloudTime += .0005;
+	}
+	glUniform1f(timeLoc, cloudTime);
 	skybox->draw();
-
-	// Draw skybox first
-	//glUniform1i(drawSkyboxLoc, (GLuint)1);
-	//glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
-	//skybox->draw();
 
 	// Draw objects
 	glUniform1i(drawSkyboxLoc, (GLuint)0);
@@ -312,6 +334,20 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 				glUniform1i(showCloudLoc, (GLuint)1);
 				showCloud = !showCloud;
 			}
+			break;
+		case GLFW_KEY_P:
+			// pause cloud
+			pauseCloud = !pauseCloud;
+			break;
+		case GLFW_KEY_R:
+			// reset cloud
+			cloudTime = 0;
+			break;
+		case GLFW_KEY_G:
+			// generate new cloud
+			cloudTime = 0;
+			glUniform1f(hashSeedLoc, 100000.0 * static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+			break;
 		}
 	}
 	else if (action == GLFW_RELEASE) {
@@ -331,10 +367,8 @@ void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 	matRoll = glm::rotate(-glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	matPitch = glm::rotate(-glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
 
-	//fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(yPos - prevY)) / 10.0f, glm::cross(center, up));
-	//fighter->object->model = glm::rotate(fighter->object->model, -glm::radians((float)(xPos - prevX)) / 10.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	rot = matRoll * matPitch * rot;
-	fighter->changeModel(matRoll * matPitch);
+	fighter->M = matRoll * matPitch * fighter->M;
 	center = glm::normalize(matRoll * matPitch * glm::vec4(center, 1.f));
 	up = glm::normalize(matRoll * matPitch * glm::vec4(up, 1.f));
 	view = glm::lookAt(eye, center, up);

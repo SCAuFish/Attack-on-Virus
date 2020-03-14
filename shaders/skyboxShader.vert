@@ -29,8 +29,10 @@ void main()
     // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
     gl_Position = projection * view * model * vec4(position, 1.0);
     // divide by size of the skybox
-    pos = transpose(mat3(view)) * (inverse(projection) * gl_Position / 2048).xyz;
-    fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
+    pos = 0.8 * normalize( transpose(mat3(view)) * (inverse(projection) * gl_Position / 2048).xyz );
+    // pos = 0.8*normalize(pos);
+    // fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
+    fsun = vec3(0.0,  0.1, 0.99);
     TexCoords   = position;
     
     colorInfo   = 0.5*normalize(normal)+0.5;

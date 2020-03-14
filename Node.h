@@ -13,10 +13,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "SpaceTree.h"
 
 class Node
 {
 public:
+	SpaceTree* kdTree;
 	virtual void draw(glm::mat4 trans) = 0;
 	virtual void changeModel(glm::mat4 trans) = 0;
 	virtual void update() = 0;

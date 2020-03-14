@@ -19,6 +19,12 @@ Geometry::~Geometry()
 void Geometry::loadObjFile(std::string filename, int mode)
 {
 	this->object = new PointCloud(filename, 1, mode);
+	this->kdTree = new SpaceTree(this->object->points);
+
+	// show first-level bounding box and filename
+	std::cout << filename << std::endl;
+	printf("(%f, %f, %f) - (%f, %f, %f)\n", this->kdTree->root->x_min, this->kdTree->root->y_min, this->kdTree->root->z_min,
+		this->kdTree->root->x_max, this->kdTree->root->y_max, this->kdTree->root->z_max);
 }
 
 void Geometry::draw(glm::mat4 C)

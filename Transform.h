@@ -14,6 +14,8 @@ public:
 	glm::mat4(*updateFunc)(int, glm::mat4&);
 	bool hasUpdateFunc;
 	std::vector<Node*> children;
+	glm::mat4 prevAccumulatedM; // record the accumulated model for collision detection, update when draw
+
 	void addChild(Node* child);
 	bool removeChild(Node* child);
 	void changeModel(glm::mat4 C);

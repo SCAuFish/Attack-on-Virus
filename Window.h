@@ -45,7 +45,8 @@ class Window
 {
 public:
 	static ObjectPointerNode* head,* tail;
-	static void addObjects(Object* toAdd);
+	// Check collision
+	static bool hasCollision(std::vector<Transform*>);
 	// Initializes your shader program(s) and uniform variable locations
 	static bool initializeProgram();
 	// Initialize your OBJ objects here

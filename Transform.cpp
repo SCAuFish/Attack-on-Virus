@@ -4,6 +4,7 @@ Transform::Transform() : Node()
 {
 	this->hasUpdateFunc = false;
 	this->M = glm::mat4(1.0f);
+	this->prevAccumulatedM = glm::mat4(1.0f);
 }
 
 Transform::~Transform()
@@ -43,6 +44,7 @@ void Transform::changeModel(glm::mat4 C) {
 void Transform::draw(glm::mat4 C)
 {
 	glm::mat4 accumulated = C * (this->M);
+	this->prevAccumulatedM = accumulated;
 	for (Node* child : this->children) {
 		child->draw(accumulated);
 	}
