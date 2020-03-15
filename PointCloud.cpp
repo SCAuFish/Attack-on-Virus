@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <unordered_map>
+#include <unordered_set>
 
 /**
  * when objFormat is 1: f v/vt/vn v/vt/vn v/vt/vn
@@ -232,6 +233,9 @@ void PointCloud::normalizeModel() {
 	glm::vec3 centerVec((xMin + xMax) / 2, (yMin + yMax) / 2, (zMin + zMax) / 2);
 	float maxDiff = fmaxf(fmaxf(xMax - xMin, yMax - yMin), zMax - zMin);
 
+	//printf("min-max: (%f, %f, %f) - (%f, %f, %f)\n", xMin, yMin, zMin, xMax, yMax, zMax);
+	//printf("centervec: (%f, %f, %f)\n", centerVec[0], centerVec[1], centerVec[2]);
+	//printf("maxDiff: %f\n", maxDiff);
 	for (int i = 0; i < points.size(); i++) {
 		points[i] = points[i] - centerVec;
 		points[i] = points[i] * (2 / maxDiff);

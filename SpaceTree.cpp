@@ -1,47 +1,66 @@
 ﻿#include "SpaceTree.h"
+#include <unordered_set>
 
-SpaceTreeNode* SpaceTree::buildKDTree(std::vector<glm::vec3>& v, int dim, int left, int right)
+// variable for debug
+//float x_min = 1000.0;
+//int triangle_count = 0;
+//std::unordered_set<unsigned int> vertices;
+
+// Build KD-Tree
+// Sort based on triangle's mid-point coordinate, get bounding box corners recursively
+SpaceTreeNode* SpaceTree::buildKDTree(const std::vector<glm::vec3>& points, std::vector<std::vector<unsigned int>>& triangles,
+	int dim, int left, int right)
 {
-	// Base Case
-	if (left == right)
-		return nullptr;
+	// Base Case should be one triangle left as long as there are more than one element in the tree
+	//if (left == right)
+	//	return nullptr;
+	if (left + 1 == right) {
+		SpaceTreeNode* leaf = new SpaceTreeNode(points);
+		leaf->left = nullptr;
+		leaf->right = nullptr;
+		leaf->triangle = triangles[left];
+		//triangle_count += 1;
+
+		//vertices.insert(leaf->triangle[0]);
+		//vertices.insert(leaf->triangle[1]);
+		//vertices.insert(leaf->triangle[2]);
+
+		// Set bouding box of the triangle
+		leaf->x_min = std::min({points[leaf->triangle[0]][0], points[leaf->triangle[1]][0], points[leaf->triangle[2]][0]});
+		leaf->x_max = std::max({points[leaf->triangle[0]][0], points[leaf->triangle[1]][0], points[leaf->triangle[2]][0]});
+
+		leaf->y_min = std::min({points[leaf->triangle[0]][1], points[leaf->triangle[1]][1], points[leaf->triangle[2]][1]});
+		leaf->y_max = std::max({points[leaf->triangle[0]][1], points[leaf->triangle[1]][1], points[leaf->triangle[2]][1]});
+							   																							
+		leaf->z_min = std::min({points[leaf->triangle[0]][2], points[leaf->triangle[1]][2], points[leaf->triangle[2]][2]});
+		leaf->z_max = std::max({points[leaf->triangle[0]][2], points[leaf->triangle[1]][2], points[leaf->triangle[2]][2]});
+	
+		return leaf;
+	}
 
 	int mid = (left + right) / 2;
 	// Sort based on dimension
-	std::sort(v.begin() + left, v.begin() + right, [&](const auto& lhs, const auto& rhs) {
-		return lhs[dim] < rhs[dim];
+	std::sort(triangles.begin() + left, triangles.begin() + right, 
+		[&](const auto& lhs, const auto& rhs) {
+		// sort based on mid-point coordinate, hopefully this is 
+		float left_mid = (points[lhs[0]][dim] + points[lhs[1]][dim] + points[lhs[2]][dim]);
+		float right_mid = (points[rhs[0]][dim] + points[rhs[1]][dim] + points[rhs[2]][dim]);
+		return left_mid < right_mid;
 	});
 
-	SpaceTreeNode* result = new SpaceTreeNode(v[mid]);
-	result->left = buildKDTree(v, (dim + 1) % 3, left, mid);
-	result->right = buildKDTree(v, (dim + 1) % 3, mid + 1, right);
+	SpaceTreeNode* result = new SpaceTreeNode(points);
+	result->left = buildKDTree(points, triangles, (dim + 1) % 3, left, mid);
+	result->right = buildKDTree(points, triangles, (dim + 1) % 3, mid, right);
 
 	// Set bounding box for vertices below result node
-	result->x_min = result->x_max = v[mid][0];
-	result->y_min = result->y_max = v[mid][1];
-	result->z_min = result->z_max = v[mid][2];
+	result->x_max = std::max(result->left->x_max, result->right->x_max);
+	result->x_min = std::min(result->left->x_min, result->right->x_min);
 
-	if (result->left != nullptr) {
-		result->x_max = std::max(result->x_max, result->left->x_max);
-		result->x_min = std::min(result->x_min, result->left->x_min);
+	result->y_max = std::max(result->left->y_max, result->right->y_max);
+	result->y_min = std::min(result->left->y_min, result->right->y_min);
 
-		result->y_max = std::max(result->y_max, result->left->y_max);
-		result->y_min = std::min(result->y_min, result->left->y_min);
-
-		result->z_max = std::max(result->z_max, result->left->z_max);
-		result->z_min = std::min(result->z_min, result->left->z_min);
-	}
-
-	if (result->right != nullptr) {
-		result->x_max = std::max(result->x_max, result->right->x_max);
-		result->x_min = std::min(result->x_min, result->right->x_min);
-
-		result->y_max = std::max(result->y_max, result->right->y_max);
-		result->y_min = std::min(result->y_min, result->right->y_min);
-
-		result->z_max = std::max(result->z_max, result->right->z_max);
-		result->z_min = std::min(result->z_min, result->right->z_min);
-	}
+	result->z_max = std::max(result->left->z_max, result->right->z_max);
+	result->z_min = std::min(result->left->z_min, result->right->z_min);
 
 	return result;
 }
@@ -80,7 +99,7 @@ std::vector<glm::vec3> constructMinMax(SpaceTreeNode* root, const glm::mat4& mod
 	return result;
 }
 
-bool SpaceTree::bbIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, const glm::mat4& lhsModel, const glm::mat4& rhsModel)
+bool SpaceTree::bbIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const glm::mat4& lhsModel, const glm::mat4& rhsModel)
 {
 	std::vector<glm::vec3> lhs_corners = constructMinMax(lhs, lhsModel);
 	std::vector<glm::vec3> rhs_corners = constructMinMax(rhs, rhsModel);
@@ -91,55 +110,109 @@ bool SpaceTree::bbIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, con
 
 	// printf("lhs: (%f, %f, %f) - (%f, %f, %f)\n", lhs_min[0], lhs_min[1], lhs_min[2], lhs_max[0], lhs_max[1], lhs_max[2]);
 	// printf("rhs: (%f, %f, %f) - (%f, %f, %f)\n", rhs_min[0], rhs_min[1], rhs_min[2], rhs_max[0], rhs_max[1], rhs_max[2]);
-	return lhs_max[dim] > rhs_min[dim] && lhs_min[dim] < rhs_max[dim];
+	return (lhs_max[0] > rhs_min[0] && lhs_min[0] < rhs_max[0]) 
+		&& (lhs_max[1] > rhs_min[1] && lhs_min[1] < rhs_max[1])
+		&& (lhs_max[2] > rhs_min[2] && lhs_min[2] < rhs_max[2]);
 }
 
-bool SpaceTree::intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, int levelLimit,
-	const glm::mat4& lhsModel, const glm::mat4& rhsModel)
+bool SpaceTree::intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs, 
+	const glm::mat4& lhsModel, const glm::mat4& rhsModel, 
+	std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles)
 {
-	// std::cout << levelLimit << std::endl;
-	//if (lhs == nullptr || rhs == nullptr) {
-	//	std::cout << "return true because of nullptr" << std::endl;
-	//	return true;
-	//}
-	if (levelLimit == 0 ||
-		((lhs->left == nullptr || lhs->right == nullptr) && (rhs->left == nullptr || rhs->right == nullptr))) {
-		return (this->bbIntersect(lhs, rhs, 0, lhsModel, rhsModel) &&
-			this->bbIntersect(lhs, rhs, 1, lhsModel, rhsModel) &&
-			this->bbIntersect(lhs, rhs, 2, lhsModel, rhsModel));
-	}
-
-	if (this->bbIntersect(lhs, rhs, dim, lhsModel, rhsModel)) {
-		if ((lhs->left == nullptr || lhs->right == nullptr) && (rhs->left != nullptr && rhs->right != nullptr)) {
-			return this->intersectHelper(lhs, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-				this->intersectHelper(lhs, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
-		}
-		else if ((rhs->left == nullptr || rhs->right == nullptr) && (lhs->left != nullptr && lhs->right != nullptr)) {
-			return this->intersectHelper(lhs->left, rhs, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-				this->intersectHelper(lhs->right, rhs, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
-		}
-		else {
-			return this->intersectHelper(lhs->left, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-				this->intersectHelper(lhs->left, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-				this->intersectHelper(lhs->right, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-				this->intersectHelper(lhs->right, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
-		}
-	}
-	else {
+	// base case : collision impossible
+	if (this->bbIntersect(lhs, rhs, lhsModel, rhsModel) == false) {
 		return false;
 	}
+	// Base Case : single triangle (leaf node)
+	if (lhs->left == nullptr && rhs->left == nullptr) {
+		// There is no node with only one child, so this case means leaf node
+		return triangleIntersect(lhs, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+	}
+
+	// Recursive Case: go to different subtrees
+	if (lhs->left == nullptr) {
+		// fast version
+		//return this->intersectHelper(lhs, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+		//	|| this->intersectHelper(lhs, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+
+		// get all triangle version
+		bool result_left = this->intersectHelper(lhs, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		bool result_right = this->intersectHelper(lhs, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		return result_left || result_right;
+	}
+	if (rhs->left == nullptr) {
+		//// fast version
+		//return this->intersectHelper(lhs->left, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+		//	|| this->intersectHelper(lhs->right, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+
+		bool result_left = this->intersectHelper(lhs->left, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		bool result_right = this->intersectHelper(lhs->right, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		return result_left || result_right;
+
+	}
+
+	//// fast version
+	//return this->intersectHelper(lhs->left, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+	//	|| this->intersectHelper(lhs->left, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+	//	|| this->intersectHelper(lhs->right, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+	//	|| this->intersectHelper(lhs->right, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+
+
+	bool result1 = this->intersectHelper(lhs->left, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+	bool result2 = this->intersectHelper(lhs->left, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+	bool result3 = this->intersectHelper(lhs->right, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+	bool result4 = this->intersectHelper(lhs->right, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+	return result1 || result2 || result3 || result4;
 }
 
-SpaceTree::SpaceTree(std::vector<glm::vec3> vs)
+bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const glm::mat4& lhsModel, const glm::mat4& rhsModel,
+	std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles)
 {
-	root = buildKDTree(vs, 0, 0, vs.size());
+	// POC : using bbIntersect
+	bool result = false;
+	result = this->bbIntersect(lhs, rhs, lhsModel, rhsModel);
+
+	// add intersected triangle meshes into vector
+	if (result) {
+		lhs_triangles.push_back(lhs->triangle[0]);
+		lhs_triangles.push_back(lhs->triangle[1]);
+		lhs_triangles.push_back(lhs->triangle[2]);
+
+		rhs_triangles.push_back(rhs->triangle[0]);
+		rhs_triangles.push_back(rhs->triangle[1]);
+		rhs_triangles.push_back(rhs->triangle[2]);
+	}
+	
+	return result;
+}
+
+SpaceTree::SpaceTree(const std::vector<glm::vec3>& points, std::vector<unsigned int> triangles) :
+	points(points)
+{
+	// below is for debug
+	//triangle_count = 0;
+	//x_min = 1000.0f;
+	//vertices.clear();
+	////std::cout << "triangle vector size: " << triangles.size() << std::endl;
+
+	std::vector<std::vector<unsigned int>> triangle_vector;
+	for (unsigned int i = 0; i < (triangles.size() / 3); i++) {
+		triangle_vector.push_back({ triangles[3 * i], triangles[3 * i + 1], triangles[3 * i + 2] });
+	}
+	root = buildKDTree(points, triangle_vector, 0, 0, triangle_vector.size());
+
+	// below is for debug
+	// std::cout << "created leaf node: " << triangle_count << std::endl;
+	// std::cout << "x_min in another way: " << x_min << std::endl;
+	// std::cout << "different vertex count: " << vertices.size() << std::endl;
 }
 
 SpaceTree::~SpaceTree()
 {
 }
 
-bool SpaceTree::intersectWith(SpaceTree* other, const glm::mat4& model, const glm::mat4& otherModel)
+bool SpaceTree::intersectWith(SpaceTree* other, const glm::mat4& model, const glm::mat4& otherModel,
+	std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles)
 {
-	return this->intersectHelper(this->root, other->root, 0, 10, model, otherModel);
+	return this->intersectHelper(this->root, other->root, model, otherModel, lhs_triangles, rhs_triangles);
 }

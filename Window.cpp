@@ -127,7 +127,7 @@ bool Window::initializeObjects()
 	bulletGeo = new Geometry();
 	bulletGeo->loadObjFile(sphereFileName, 0);
 	bulletGeo->setModelLoc(modelLoc);
-	
+
 	return true;
 }
 
@@ -229,8 +229,11 @@ bool Window::hasCollision(std::vector<Transform*> objs)
 		for (int j = i + 1; j < objs.size(); j++) {
 			Transform* lhs = objs[i];
 			Transform* rhs = objs[j];
-			if (lhs->children[0]->kdTree->intersectWith(rhs->children[0]->kdTree, lhs->prevAccumulatedM, rhs->prevAccumulatedM) )
+			std::vector<unsigned int> lhs_triangles, rhs_triangles;   // the triangles that collided
+			if (lhs->children[0]->kdTree->intersectWith(rhs->children[0]->kdTree, lhs->prevAccumulatedM, rhs->prevAccumulatedM, lhs_triangles, rhs_triangles)) {
+				printf("collided triangle vertex count: %d, %d\n", lhs_triangles.size(), rhs_triangles.size());
 				return true;
+			}
 		}
 	}
 
@@ -283,7 +286,7 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(skybox->model));
-	if (!pauseCloud){
+	if (!pauseCloud) {
 		cloudTime += .0005;
 	}
 	glUniform1f(timeLoc, cloudTime);

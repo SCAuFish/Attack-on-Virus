@@ -1,11 +1,10 @@
 #include "SpaceTreeNode.h"
+#include <limits>
 
-SpaceTreeNode::SpaceTreeNode(glm::vec3 v)
+SpaceTreeNode::SpaceTreeNode(const std::vector<glm::vec3>& points) : points(points)
 {
-	vertex = v;
-	x_min = x_max = v[0];
-	y_min = y_max = v[1];
-	z_min = z_max = v[2];
+	x_min = y_min = z_min = std::numeric_limits<float>::max();
+	x_max = y_max = z_max = std::numeric_limits<float>::min();
 	left = right = nullptr;
 }
 
