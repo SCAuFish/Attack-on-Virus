@@ -243,7 +243,7 @@ void Window::idleCallback()
 	if (hasBullet) {
 		progress++;
 		bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 0.6f));
-		if (progress > 300) hasBullet = 0;
+		// if (progress > 300) hasBullet = 0;
 	}
 
 	if (isMovingForward) {
@@ -260,7 +260,7 @@ void Window::launchBullet() {
 	progress = 0;
 	bullet = new Transform();
 	bullet->addChild(bulletGeo);
-	// objList.push_back(bullet);
+	objList.push_back(bullet);
 
 	bullet->M = fighter->M;
 	bullet->M = glm::scale(bullet->M, glm::vec3(0.2f, 0.2f, 0.2f));

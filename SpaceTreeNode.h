@@ -22,7 +22,7 @@ class SpaceTreeNode
 {
 public:
 	// Instance variables
-	glm::vec3 vertex;
+	glm::vec3 vertex;    // store triangle fo
 	float x_min, x_max, y_min, y_max, z_min, z_max;
 	SpaceTreeNode* left, * right;
 

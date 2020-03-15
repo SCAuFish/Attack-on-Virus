@@ -46,7 +46,7 @@ SpaceTreeNode* SpaceTree::buildKDTree(std::vector<glm::vec3>& v, int dim, int le
 	return result;
 }
 
-std::vector<glm::vec3> constructMinMax(SpaceTreeNode * root, const glm::mat4 & model) {
+std::vector<glm::vec3> constructMinMax(SpaceTreeNode* root, const glm::mat4& model) {
 	float x_min = root->x_min;
 	float x_max = root->x_max;
 	float y_min = root->y_min;
@@ -88,31 +88,42 @@ bool SpaceTree::bbIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, con
 	glm::vec3 lhs_max = lhs_corners[1];
 	glm::vec3 rhs_min = rhs_corners[0];
 	glm::vec3 rhs_max = rhs_corners[1];
-	
+
 	// printf("lhs: (%f, %f, %f) - (%f, %f, %f)\n", lhs_min[0], lhs_min[1], lhs_min[2], lhs_max[0], lhs_max[1], lhs_max[2]);
 	// printf("rhs: (%f, %f, %f) - (%f, %f, %f)\n", rhs_min[0], rhs_min[1], rhs_min[2], rhs_max[0], rhs_max[1], rhs_max[2]);
 	return lhs_max[dim] > rhs_min[dim] && lhs_min[dim] < rhs_max[dim];
 }
 
-bool SpaceTree::intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, int levelLimit, 
-	const glm::mat4 & lhsModel, const glm::mat4 & rhsModel)
+bool SpaceTree::intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, int levelLimit,
+	const glm::mat4& lhsModel, const glm::mat4& rhsModel)
 {
 	// std::cout << levelLimit << std::endl;
 	//if (lhs == nullptr || rhs == nullptr) {
 	//	std::cout << "return true because of nullptr" << std::endl;
 	//	return true;
 	//}
-	if (levelLimit == 0 || lhs->left == nullptr || lhs->right == nullptr || rhs->left == nullptr || rhs->right == nullptr) {
-		return (this->bbIntersect(lhs, rhs, 0, lhsModel, rhsModel) && 
-			this->bbIntersect(lhs, rhs, 1, lhsModel, rhsModel) && 
+	if (levelLimit == 0 ||
+		((lhs->left == nullptr || lhs->right == nullptr) && (rhs->left == nullptr || rhs->right == nullptr))) {
+		return (this->bbIntersect(lhs, rhs, 0, lhsModel, rhsModel) &&
+			this->bbIntersect(lhs, rhs, 1, lhsModel, rhsModel) &&
 			this->bbIntersect(lhs, rhs, 2, lhsModel, rhsModel));
 	}
 
 	if (this->bbIntersect(lhs, rhs, dim, lhsModel, rhsModel)) {
-		return this->intersectHelper(lhs->left, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-			this->intersectHelper(lhs->left, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-			this->intersectHelper(lhs->right, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
-			this->intersectHelper(lhs->right, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
+		if ((lhs->left == nullptr || lhs->right == nullptr) && (rhs->left != nullptr && rhs->right != nullptr)) {
+			return this->intersectHelper(lhs, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
+				this->intersectHelper(lhs, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
+		}
+		else if ((rhs->left == nullptr || rhs->right == nullptr) && (lhs->left != nullptr && lhs->right != nullptr)) {
+			return this->intersectHelper(lhs->left, rhs, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
+				this->intersectHelper(lhs->right, rhs, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
+		}
+		else {
+			return this->intersectHelper(lhs->left, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
+				this->intersectHelper(lhs->left, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
+				this->intersectHelper(lhs->right, rhs->left, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel) ||
+				this->intersectHelper(lhs->right, rhs->right, (dim + 1) % 3, levelLimit - 1, lhsModel, rhsModel);
+		}
 	}
 	else {
 		return false;
@@ -128,7 +139,7 @@ SpaceTree::~SpaceTree()
 {
 }
 
-bool SpaceTree::intersectWith(SpaceTree* other, const glm::mat4 & model, const glm::mat4 & otherModel)
+bool SpaceTree::intersectWith(SpaceTree* other, const glm::mat4& model, const glm::mat4& otherModel)
 {
 	return this->intersectHelper(this->root, other->root, 0, 10, model, otherModel);
 }
