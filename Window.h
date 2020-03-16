@@ -33,8 +33,9 @@
 #include "Geometry.h"
 #include "Transform.h"
 #include "robot.h"
-#include "BezierCurve.h"
+//#include "BezierCurve.h"
 #include "Cloud.h"
+
 
 struct ObjectPointerNode {
 	Object* curr;

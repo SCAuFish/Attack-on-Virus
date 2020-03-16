@@ -15,6 +15,7 @@
 #include "Object.h"
 #include "Material.h"
 
+
 class PointCloud : public Object
 {
 private:
@@ -34,6 +35,7 @@ public:
 	~PointCloud();
 
 	void draw();
+	void drawComponents(std::vector<unsigned int>& parts);
 	void update();
 
 	GLfloat getPointSize();

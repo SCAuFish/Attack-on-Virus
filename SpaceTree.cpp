@@ -6,6 +6,8 @@
 //int triangle_count = 0;
 //std::unordered_set<unsigned int> vertices;
 
+bool debugOn = false;
+
 // Build KD-Tree
 // Sort based on triangle's mid-point coordinate, get bounding box corners recursively
 SpaceTreeNode* SpaceTree::buildKDTree(const std::vector<glm::vec3>& points, std::vector<std::vector<unsigned int>>& triangles,
@@ -19,11 +21,6 @@ SpaceTreeNode* SpaceTree::buildKDTree(const std::vector<glm::vec3>& points, std:
 		leaf->left = nullptr;
 		leaf->right = nullptr;
 		leaf->triangle = triangles[left];
-		//triangle_count += 1;
-
-		//vertices.insert(leaf->triangle[0]);
-		//vertices.insert(leaf->triangle[1]);
-		//vertices.insert(leaf->triangle[2]);
 
 		// Set bouding box of the triangle
 		leaf->x_min = std::min({points[leaf->triangle[0]][0], points[leaf->triangle[1]][0], points[leaf->triangle[2]][0]});
@@ -131,38 +128,45 @@ bool SpaceTree::intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs,
 
 	// Recursive Case: go to different subtrees
 	if (lhs->left == nullptr) {
-		// fast version
-		//return this->intersectHelper(lhs, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
-		//	|| this->intersectHelper(lhs, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-
-		// get all triangle version
-		bool result_left = this->intersectHelper(lhs, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-		bool result_right = this->intersectHelper(lhs, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-		return result_left || result_right;
+		if (debugOn) {
+			// get all triangle version
+			bool result_left = this->intersectHelper(lhs, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+			bool result_right = this->intersectHelper(lhs, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+			return result_left || result_right;
+		}
+		else {
+			// fast version
+			return this->intersectHelper(lhs, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+				|| this->intersectHelper(lhs, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		}
 	}
 	if (rhs->left == nullptr) {
-		//// fast version
-		//return this->intersectHelper(lhs->left, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
-		//	|| this->intersectHelper(lhs->right, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-
-		bool result_left = this->intersectHelper(lhs->left, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-		bool result_right = this->intersectHelper(lhs->right, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-		return result_left || result_right;
-
+		if (debugOn) {
+			bool result_left = this->intersectHelper(lhs->left, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+			bool result_right = this->intersectHelper(lhs->right, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+			return result_left || result_right;
+		}
+		else{
+			// fast version
+			return this->intersectHelper(lhs->left, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+				|| this->intersectHelper(lhs->right, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		}
 	}
 
-	//// fast version
-	//return this->intersectHelper(lhs->left, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
-	//	|| this->intersectHelper(lhs->left, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
-	//	|| this->intersectHelper(lhs->right, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
-	//	|| this->intersectHelper(lhs->right, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-
-
-	bool result1 = this->intersectHelper(lhs->left, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-	bool result2 = this->intersectHelper(lhs->left, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-	bool result3 = this->intersectHelper(lhs->right, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-	bool result4 = this->intersectHelper(lhs->right, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
-	return result1 || result2 || result3 || result4;
+	if (debugOn){
+		bool result1 = this->intersectHelper(lhs->left, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		bool result2 = this->intersectHelper(lhs->left, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		bool result3 = this->intersectHelper(lhs->right, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		bool result4 = this->intersectHelper(lhs->right, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		return result1 || result2 || result3 || result4;
+	}
+	else {
+		// fast version
+		return this->intersectHelper(lhs->left, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+			|| this->intersectHelper(lhs->left, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+			|| this->intersectHelper(lhs->right, rhs->left, lhsModel, rhsModel, lhs_triangles, rhs_triangles)
+			|| this->intersectHelper(lhs->right, rhs->right, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+	}
 }
 
 bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const glm::mat4& lhsModel, const glm::mat4& rhsModel,
@@ -172,6 +176,33 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 	bool result = false;
 	result = this->bbIntersect(lhs, rhs, lhsModel, rhsModel);
 
+	// Using Raabe algorithm proposed in 2009
+	std::vector<glm::vec3> p = { lhs->points[lhs->triangle[0]], lhs->points[lhs->triangle[1]], lhs->points[lhs->triangle[2]] };
+	std::vector<glm::vec3> u = { p[1] - p[0], p[2] - p[1], p[0] - p[2] };
+
+	std::vector<glm::vec3> q = { rhs->points[rhs->triangle[0]], rhs->points[rhs->triangle[1]], rhs->points[rhs->triangle[2]] };
+	std::vector<glm::vec3> v = { q[1] - q[0], q[2] - q[1], q[0] - q[2] };
+
+	std::vector<glm::vec3> l;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			l.push_back(glm::cross(u[i], v[j]));
+		}
+	}
+
+	for (glm::vec3 l : l) {
+		float t1, t2, s1, s2;
+		t1 = std::min({ glm::dot(p[0], l), glm::dot(p[1], l), glm::dot(p[2], l) });
+		t2 = std::max({ glm::dot(p[0], l), glm::dot(p[1], l), glm::dot(p[2], l) });
+		s1 = std::min({ glm::dot(q[0], l), glm::dot(q[1], l), glm::dot(q[2], l) });
+		s2 = std::max({ glm::dot(q[0], l), glm::dot(q[1], l), glm::dot(q[2], l) });
+
+		if (t1 <= s2 && s1 <= t2) {
+			result = true;
+			break;
+		}
+	}
+	// TODO: implementing Raabe algorithm
 	// add intersected triangle meshes into vector
 	if (result) {
 		lhs_triangles.push_back(lhs->triangle[0]);
@@ -189,22 +220,11 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 SpaceTree::SpaceTree(const std::vector<glm::vec3>& points, std::vector<unsigned int> triangles) :
 	points(points)
 {
-	// below is for debug
-	//triangle_count = 0;
-	//x_min = 1000.0f;
-	//vertices.clear();
-	////std::cout << "triangle vector size: " << triangles.size() << std::endl;
-
 	std::vector<std::vector<unsigned int>> triangle_vector;
 	for (unsigned int i = 0; i < (triangles.size() / 3); i++) {
 		triangle_vector.push_back({ triangles[3 * i], triangles[3 * i + 1], triangles[3 * i + 2] });
 	}
 	root = buildKDTree(points, triangle_vector, 0, 0, triangle_vector.size());
-
-	// below is for debug
-	// std::cout << "created leaf node: " << triangle_count << std::endl;
-	// std::cout << "x_min in another way: " << x_min << std::endl;
-	// std::cout << "different vertex count: " << vertices.size() << std::endl;
 }
 
 SpaceTree::~SpaceTree()

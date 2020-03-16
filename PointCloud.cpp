@@ -1,4 +1,5 @@
 #include "PointCloud.h"
+#include "SpaceTree.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -20,7 +21,7 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 	spinRate = 0.1f;
 	std::ifstream objFile(objFilename);
 	std::string line;
-	
+
 	std::unordered_map<int, int> vertexToNormal;
 
 	while (std::getline(objFile, line)) {
@@ -59,9 +60,9 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 				lineReader >> v2 >> _ >> t2 >> _ >> n2;
 				lineReader >> v3 >> _ >> t3 >> _ >> n3;
 
-				vertexToNormal[v1-1] = n1-1;
-				vertexToNormal[v2-1] = n2-1;
-				vertexToNormal[v3-1] = n3-1;
+				vertexToNormal[v1 - 1] = n1 - 1;
+				vertexToNormal[v2 - 1] = n2 - 1;
+				vertexToNormal[v3 - 1] = n3 - 1;
 
 				triangles.push_back(v1 - 1);
 				triangles.push_back(v2 - 1);
@@ -146,10 +147,33 @@ void PointCloud::draw()
 	glPointSize(pointSize);
 	// Draw points 
 	// glDrawArrays(GL_POINTS, 0, points.size());
+
 	glDrawElements(GL_TRIANGLES, triangles.size(), GL_UNSIGNED_INT, 0);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void PointCloud::drawComponents(std::vector<unsigned int>& parts) {
+	// Bind to the VAO.
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	// Set point size.
+	glPointSize(pointSize);
+	// Draw points 
+	// glDrawArrays(GL_POINTS, 0, points.size());
+	// Pass in triangle meshes
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * parts.size(),
+		parts.data(), GL_STATIC_DRAW);
+	glDrawElements(GL_TRIANGLES, parts.size(), GL_UNSIGNED_INT, 0);
+	// Unbind from the VAO.
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	// Pass in triangle meshes when drawing during debug mode
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * triangles.size(),
+		triangles.data(), GL_STATIC_DRAW);
 }
 
 void PointCloud::update()
@@ -233,16 +257,10 @@ void PointCloud::normalizeModel() {
 	glm::vec3 centerVec((xMin + xMax) / 2, (yMin + yMax) / 2, (zMin + zMax) / 2);
 	float maxDiff = fmaxf(fmaxf(xMax - xMin, yMax - yMin), zMax - zMin);
 
-	//printf("min-max: (%f, %f, %f) - (%f, %f, %f)\n", xMin, yMin, zMin, xMax, yMax, zMax);
-	//printf("centervec: (%f, %f, %f)\n", centerVec[0], centerVec[1], centerVec[2]);
-	//printf("maxDiff: %f\n", maxDiff);
 	for (int i = 0; i < points.size(); i++) {
 		points[i] = points[i] - centerVec;
 		points[i] = points[i] * (2 / maxDiff);
 	}
-
-	/*model = glm::scale(model, glm::vec3(2 / maxDiff, 2 / maxDiff, 2 / maxDiff));
-	model = glm::translate(-2.0f * centerVec / maxDiff) * model;*/
 }
 
 void PointCloud::setMaterial(Material::DefinedMaterial type, GLuint programId) {

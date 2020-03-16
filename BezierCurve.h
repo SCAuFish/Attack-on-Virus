@@ -1,4 +1,6 @@
 #pragma once
+#ifndef _BEZIERCURVE_H_
+#define _BEZIERCURVE_H_
 #include "Geometry.h"
 
 extern int pointCount;
@@ -19,3 +21,4 @@ public:
 	void draw(glm::mat4 C);
 };
 
+#endif

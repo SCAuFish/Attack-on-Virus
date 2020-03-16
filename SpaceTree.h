@@ -5,16 +5,17 @@
 #include "SpaceTreeNode.h"
 #include <algorithm>
 // This is a KD-Tree that is used to label bounding boxes of different objects
+
+extern bool debugOn;
+
 class SpaceTree
 {
 private:
 	SpaceTreeNode* buildKDTree(const std::vector<glm::vec3>& points, std::vector<std::vector<unsigned int>>& triangles, 
 		int dim, int left, int right);
 	bool bbIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const glm::mat4& lhsModel, const glm::mat4& rhsModel);
-	// bool bbIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim);
 	bool intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const glm::mat4& lhsModel, const glm::mat4& rhsModel, std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles);
 	bool triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const glm::mat4& lhsModel, const glm::mat4& rhsModel, std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles);
-	// bool intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs, int dim, int levelLimit);
 
 public:
 	//Instance variables
@@ -27,8 +28,6 @@ public:
 
 	bool intersectWith(SpaceTree* other, const glm::mat4& model, const glm::mat4& otherModel, 
 		std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles);
-
-	// bool intersectWith(SpaceTree* other);
 };
 
 #endif

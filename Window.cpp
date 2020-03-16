@@ -4,7 +4,6 @@ std::string virusFileName = ".\\Objects\\Coronavirus_processed.obj";
 std::string fighterFileName = ".\\Objects\\fighter_processed.obj";
 std::string sphereFileName = ".\\Objects\\sphere.obj";
 
-
 // This order of cubemap texture should not be changed
 std::vector<char*> textureFiles = { ".\\skybox\\right.ppm", ".\\skybox\\left.ppm", ".\\skybox\\top.ppm",
 	".\\skybox\\bottom.ppm", ".\\skybox\\back.ppm", ".\\skybox\\front.ppm" };
@@ -32,12 +31,13 @@ namespace
 	Transform* robot;
 	bool isMovingForward = false;
 	bool pauseCloud = false;
+	//bool debugOn = false;
 	float cloudTime = 0;
 
 	Cloud* cloud;
 	bool showCloud;
 	unsigned char texture[256][256][3];       //Temporary array to hold texture RGB values 
-	BezierCurve* curve[5];
+
 	int curvePointCount;
 
 	glm::vec3 eye(0, 0, 0); // Camera position.
@@ -59,6 +59,7 @@ namespace
 	GLuint showCloudLoc;
 	GLuint timeLoc;
 	GLuint hashSeedLoc;
+	GLuint debugOnLoc;
 
 	double prevX, prevY;
 };
@@ -74,6 +75,7 @@ void setShaderLoc() {
 	showCloudLoc = glGetUniformLocation(currentProgram, "showCloud");
 	timeLoc = glGetUniformLocation(currentProgram, "time");
 	hashSeedLoc = glGetUniformLocation(currentProgram, "hashSeed");
+	debugOnLoc = glGetUniformLocation(currentProgram, "debugOn");
 }
 
 bool Window::initializeProgram()
@@ -231,7 +233,14 @@ bool Window::hasCollision(std::vector<Transform*> objs)
 			Transform* rhs = objs[j];
 			std::vector<unsigned int> lhs_triangles, rhs_triangles;   // the triangles that collided
 			if (lhs->children[0]->kdTree->intersectWith(rhs->children[0]->kdTree, lhs->prevAccumulatedM, rhs->prevAccumulatedM, lhs_triangles, rhs_triangles)) {
-				printf("collided triangle vertex count: %d, %d\n", lhs_triangles.size(), rhs_triangles.size());
+				if (debugOn) {
+					glUniform1i(debugOnLoc, 1);
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lhs->prevAccumulatedM));
+					((Geometry*)lhs->children[0])->object->drawComponents(lhs_triangles);
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rhs->prevAccumulatedM));
+					((Geometry*)rhs->children[0])->object->drawComponents(rhs_triangles);
+					glUniform1i(debugOnLoc, 0);
+				}
 				return true;
 			}
 		}
@@ -242,7 +251,6 @@ bool Window::hasCollision(std::vector<Transform*> objs)
 
 void Window::idleCallback()
 {
-	world->draw(glm::mat4(1.0f));
 	if (hasBullet) {
 		progress++;
 		bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 0.6f));
@@ -251,10 +259,6 @@ void Window::idleCallback()
 
 	if (isMovingForward) {
 		moveForward();
-	}
-
-	if (hasCollision(objList)) {
-		std::cout << rand() << std::endl;
 	}
 }
 
@@ -267,6 +271,7 @@ void Window::launchBullet() {
 
 	bullet->M = fighter->M;
 	bullet->M = glm::scale(bullet->M, glm::vec3(0.2f, 0.2f, 0.2f));
+	bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 6.5f));
 	bullet->draw(glm::mat4(1.0f));
 }
 
@@ -274,7 +279,6 @@ void Window::displayCallback(GLFWwindow* window)
 {
 	// Update count to count period
 	updateCount = (updateCount + 1) % period;
-	curvePointCount = (curvePointCount + 1) % (5 * (pointCount + 1));
 	//robot->update();
 
 	glUseProgram(skyboxProgram);
@@ -302,6 +306,10 @@ void Window::displayCallback(GLFWwindow* window)
 	// Draw bullet 
 	if (hasBullet) {
 		bullet->draw(glm::mat4(1.0f));
+	}
+
+	if (hasCollision(objList)) {
+		// actually debug info is painted in hasCollision...
 	}
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
@@ -350,6 +358,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			// generate new cloud
 			cloudTime = 0;
 			glUniform1f(hashSeedLoc, 100000.0 * static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+			break;
+		case GLFW_KEY_T:
+			// switch to debug mode
+			debugOn = !debugOn;
 			break;
 		}
 	}

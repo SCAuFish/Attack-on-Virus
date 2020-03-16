@@ -33,6 +33,7 @@ uniform sampler2D cloud;
 
 uniform int drawSkybox;
 uniform int showCloud;
+uniform int debugOn;
 
 void main()
 {
@@ -80,6 +81,10 @@ void main()
     } else {
         // Use the color passed in. An alpha of 1.0f means it is not transparent.
         fragColor = vec4(colorInfo, 1.0f);
+    }
+    
+    if (debugOn == 1){
+        fragColor = vec4(1.0f, .0f, .0f, 1.0f);
     }
 }
 
