@@ -22,11 +22,12 @@ class SpaceTreeNode
 {
 public:
 	// Instance variables
-	glm::vec3 vertex;    // store triangle fo
+	const std::vector<glm::vec3>& points;
+	std::vector<unsigned int> triangle;    // store triangle in leaf node
 	float x_min, x_max, y_min, y_max, z_min, z_max;
 	SpaceTreeNode* left, * right;
 
-	SpaceTreeNode(glm::vec3 v);
+	SpaceTreeNode(const std::vector<glm::vec3>& points);
 	~SpaceTreeNode();
 };
 

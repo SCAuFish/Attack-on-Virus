@@ -19,7 +19,7 @@ Geometry::~Geometry()
 void Geometry::loadObjFile(std::string filename, int mode)
 {
 	this->object = new PointCloud(filename, 1, mode);
-	this->kdTree = new SpaceTree(this->object->points);
+	this->kdTree = new SpaceTree( this->object->points, this->object->triangles );
 
 	// show first-level bounding box and filename
 	std::cout << filename << std::endl;
