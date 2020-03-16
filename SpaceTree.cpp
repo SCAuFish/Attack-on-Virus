@@ -123,7 +123,9 @@ bool SpaceTree::intersectHelper(SpaceTreeNode* lhs, SpaceTreeNode* rhs,
 	// Base Case : single triangle (leaf node)
 	if (lhs->left == nullptr && rhs->left == nullptr) {
 		// There is no node with only one child, so this case means leaf node
-		return triangleIntersect(lhs, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		bool result = triangleIntersect(lhs, rhs, lhsModel, rhsModel, lhs_triangles, rhs_triangles);
+		//if (result == false) std::cout << "failed triangle interception" << std::endl;
+		return result;
 	}
 
 	// Recursive Case: go to different subtrees
@@ -173,14 +175,20 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 	std::vector<unsigned int>& lhs_triangles, std::vector<unsigned int>& rhs_triangles)
 {
 	// POC : using bbIntersect
-	bool result = false;
+	bool result = true;
 	// result = this->bbIntersect(lhs, rhs, lhsModel, rhsModel);
 
 	// Using Raabe algorithm proposed in 2009
 	std::vector<glm::vec3> p = { lhs->points[lhs->triangle[0]], lhs->points[lhs->triangle[1]], lhs->points[lhs->triangle[2]] };
+	for (int i = 0; i < 3; i++) {
+		p[i] = lhsModel * glm::vec4(p[i], 1.0f);
+	}
 	std::vector<glm::vec3> u = { p[1] - p[0], p[2] - p[1], p[0] - p[2] };
 
 	std::vector<glm::vec3> q = { rhs->points[rhs->triangle[0]], rhs->points[rhs->triangle[1]], rhs->points[rhs->triangle[2]] };
+	for (int i = 0; i < 3; i++) {
+		q[i] = rhsModel * glm::vec4(q[i], 1.0f);
+	}
 	std::vector<glm::vec3> v = { q[1] - q[0], q[2] - q[1], q[0] - q[2] };
 
 	std::vector<glm::vec3> l;
@@ -197,8 +205,8 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 		s1 = std::min({ glm::dot(q[0], l), glm::dot(q[1], l), glm::dot(q[2], l) });
 		s2 = std::max({ glm::dot(q[0], l), glm::dot(q[1], l), glm::dot(q[2], l) });
 
-		if (t1 < s2 && s1 < t2) {
-			result = true;
+		if (!(t1 < s2 && s1 < t2)) {
+			result = false;
 			break;
 		}
 	}
@@ -212,6 +220,9 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 		rhs_triangles.push_back(rhs->triangle[0]);
 		rhs_triangles.push_back(rhs->triangle[1]);
 		rhs_triangles.push_back(rhs->triangle[2]);
+
+		// printf("triangle 1: (%f, %f, %f) - (%f, %f, %f) - (%f, %f, %f)\n", p[0][0], p[0][1], p[0][2], p[1][0], p[1][1], p[1][2], p[2][0], p[2][1], p[2][2]);
+		// printf("triangle 2: (%f, %f, %f) - (%f, %f, %f) - (%f, %f, %f)\n", q[0][0], q[0][1], q[0][2], q[1][0], q[1][1], q[1][2], q[2][0], q[2][1], q[2][2]);
 	}
 	
 	return result;
