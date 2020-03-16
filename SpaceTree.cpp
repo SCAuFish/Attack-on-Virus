@@ -174,7 +174,7 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 {
 	// POC : using bbIntersect
 	bool result = false;
-	result = this->bbIntersect(lhs, rhs, lhsModel, rhsModel);
+	// result = this->bbIntersect(lhs, rhs, lhsModel, rhsModel);
 
 	// Using Raabe algorithm proposed in 2009
 	std::vector<glm::vec3> p = { lhs->points[lhs->triangle[0]], lhs->points[lhs->triangle[1]], lhs->points[lhs->triangle[2]] };
@@ -197,7 +197,7 @@ bool SpaceTree::triangleIntersect(SpaceTreeNode* lhs, SpaceTreeNode* rhs, const 
 		s1 = std::min({ glm::dot(q[0], l), glm::dot(q[1], l), glm::dot(q[2], l) });
 		s2 = std::max({ glm::dot(q[0], l), glm::dot(q[1], l), glm::dot(q[2], l) });
 
-		if (t1 <= s2 && s1 <= t2) {
+		if (t1 < s2 && s1 < t2) {
 			result = true;
 			break;
 		}
