@@ -344,7 +344,7 @@ void Window::displayCallback(GLFWwindow* window)
 	fighter->draw(glm::mat4(1.0f));
 
 	std::vector<Transform*> collided = findCollision(bulletList, virusList);
-	if (collided.size() != 0) {
+	if (collided.size() != 0 && !debugOn) {
 		bulletList.erase(std::find(bulletList.begin(), bulletList.end(), collided[0]));
 		virusList.erase(std::find(virusList.begin(), virusList.end(), collided[1]));
 		world->removeChild(collided[0]);
