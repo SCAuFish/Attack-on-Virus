@@ -2,11 +2,14 @@
 
 std::string virusFileName = ".\\Objects\\Coronavirus_processed.obj";
 std::string fighterFileName = ".\\Objects\\fighter_processed.obj";
-std::string sphereFileName = ".\\Objects\\sphere.obj";
+std::string sphereFileName = ".\\Objects\\sphere_processed.obj";
 
 // This order of cubemap texture should not be changed
 std::vector<char*> textureFiles = { ".\\skybox\\right.ppm", ".\\skybox\\left.ppm", ".\\skybox\\top.ppm",
 	".\\skybox\\bottom.ppm", ".\\skybox\\back.ppm", ".\\skybox\\front.ppm" };
+char* virusTexture = ".\\skybox\\virus.ppm";
+char* fighterTexture = ".\\skybox\\fighter.ppm";
+char* bulletTexture = ".\\skybox\\bullet.ppm";
 ObjectPointerNode* Window::head, * Window::tail;
 
 //PointCloud* bunny, * dragon, * bear;
@@ -25,18 +28,19 @@ namespace
 
 	// Transforms in objList should be the level right above the geometry
 	std::vector<Transform*> objList;
+	std::vector<Transform*> bulletList;
+	std::vector<Transform*> virusList;
 	Geometry* virusGeo, * fighterGeo, * bulletGeo;
-	Transform* virus, * fighter, * bullet;
+	Transform* virus, * fighter;
 	Transform* world;
 	Transform* robot;
+	BezierCurve* curve[5];
 	bool isMovingForward = false;
 	bool pauseCloud = false;
 	//bool debugOn = false;
 	float cloudTime = 0;
 
-	Cloud* cloud;
-	bool showCloud;
-	unsigned char texture[256][256][3];       //Temporary array to hold texture RGB values 
+	bool showCloud = true;
 
 	int curvePointCount;
 
@@ -60,6 +64,7 @@ namespace
 	GLuint timeLoc;
 	GLuint hashSeedLoc;
 	GLuint debugOnLoc;
+	GLuint gameOverLoc;
 
 	double prevX, prevY;
 };
@@ -76,6 +81,10 @@ void setShaderLoc() {
 	timeLoc = glGetUniformLocation(currentProgram, "time");
 	hashSeedLoc = glGetUniformLocation(currentProgram, "hashSeed");
 	debugOnLoc = glGetUniformLocation(currentProgram, "debugOn");
+	gameOverLoc = glGetUniformLocation(currentProgram, "gameOver");
+
+	glUniform1i(showCloudLoc, (GLuint)1);
+
 }
 
 bool Window::initializeProgram()
@@ -103,20 +112,44 @@ bool Window::initializeProgram()
 
 bool Window::initializeObjects()
 {
+
 	// Create one virus
 	virusGeo = new Geometry();
 	virusGeo->loadObjFile(virusFileName, 1);
 	virusGeo->setModelLoc(modelLoc);
 
-	virus = new Transform();
-	virus->addChild(virusGeo);
-	virus->M = glm::scale(glm::vec3(5.0f, 5.0f, 5.0f)) * glm::translate(glm::vec3(0.0f, -2.0f, 5.0f)) * virus->M;
-	objList.push_back(virus);
+	// load virus texture
+	unsigned int textureID = load2DTexture(virusTexture);
+	virusGeo->object->setTextureId(textureID);
+	 
+	// Create a list of random viruses
+	for (int i = 0; i < 100; i++) {
+		virus = new Transform();
+		virus->addChild(virusGeo);
+		float scale = std::rand() % 10;
+		float x_shift = std::rand() % 100 - 50;
+		float y_shift = std::rand() % 100 - 50;
+		float z_shift = std::rand() % 100 - 50;
+		virus->M = glm::translate(glm::vec3(x_shift, y_shift, z_shift)) * glm::scale(glm::vec3(scale, scale, scale)) * virus->M;
+		objList.push_back(virus);
+		virusList.push_back(virus);
+	}
+
+	// curve on which virus moves
+	//curve[0] = new BezierCurve(glm::vec3(-3, -3, 1), glm::vec3(-2, -1, 3), glm::vec3(0, 1, 2), glm::vec3(2, 2, 4));
+	//curve[1] = new BezierCurve(glm::vec3(2, 2, 4), glm::vec3(4, 3, 6), glm::vec3(3, 4, 2), glm::vec3(2, 2, 0));
+	//curve[2] = new BezierCurve(glm::vec3(2, 2, 0), glm::vec3(1, 0, -2), glm::vec3(-3, -1, -4), glm::vec3(-4, -3, -5));
+	//curve[3] = new BezierCurve(glm::vec3(-4, -3, -5), glm::vec3(-5, -5, -6), glm::vec3(-7, -4, -3), glm::vec3(-4, -2, -1));
+	//curve[4] = new BezierCurve(glm::vec3(-4, -2, -1), glm::vec3(-1, 0, 1), glm::vec3(-4, -5, -1), glm::vec3(-3, -3, 1));
 
 	// Create one fighter
 	fighterGeo = new Geometry();
 	fighterGeo->loadObjFile(fighterFileName, 1);
 	fighterGeo->setModelLoc(modelLoc);
+
+	// load virus texture
+	textureID = load2DTexture(fighterTexture);
+	fighterGeo->object->setTextureId(textureID);
 
 	fighter = new Transform();
 	fighter->addChild(fighterGeo);
@@ -124,11 +157,16 @@ bool Window::initializeObjects()
 	objList.push_back(fighter);
 
 	world = new Transform();
-	world->addChild(virus);
+	for (Transform* virus : virusList) {
+		world->addChild(virus);
+	}
 
 	bulletGeo = new Geometry();
 	bulletGeo->loadObjFile(sphereFileName, 0);
 	bulletGeo->setModelLoc(modelLoc);
+
+	textureID = load2DTexture(bulletTexture);
+	bulletGeo->object->setTextureId(textureID);
 
 	return true;
 }
@@ -225,12 +263,10 @@ void moveForward() {
 	// skybox->model = glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])) * skybox->model;
 }
 
-bool Window::hasCollision(std::vector<Transform*> objs)
+std::vector<Transform*> Window::findCollision(std::vector<Transform*>& objs1, std::vector<Transform*>& objs2)
 {
-	for (int i = 0; i < objs.size(); i++) {
-		for (int j = i + 1; j < objs.size(); j++) {
-			Transform* lhs = objs[i];
-			Transform* rhs = objs[j];
+	for (Transform* lhs : objs1) {
+		for (Transform* rhs : objs2) {
 			std::vector<unsigned int> lhs_triangles, rhs_triangles;   // the triangles that collided
 			if (lhs->children[0]->kdTree->intersectWith(rhs->children[0]->kdTree, lhs->prevAccumulatedM, rhs->prevAccumulatedM, lhs_triangles, rhs_triangles)) {
 				if (debugOn) {
@@ -241,19 +277,22 @@ bool Window::hasCollision(std::vector<Transform*> objs)
 					((Geometry*)rhs->children[0])->object->drawComponents(rhs_triangles);
 					glUniform1i(debugOnLoc, 0);
 				}
-				return true;
+				return { lhs, rhs };
 			}
 		}
 	}
 
-	return false;
+	// handle collided objects
+	return {};
 }
 
 void Window::idleCallback()
 {
 	if (hasBullet) {
 		progress++;
-		bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 0.6f));
+		for (Transform* bullet : bulletList) {
+			bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 0.6f));
+		}
 		// if (progress > 300) hasBullet = 0;
 	}
 
@@ -265,14 +304,15 @@ void Window::idleCallback()
 void Window::launchBullet() {
 	hasBullet = 1;
 	progress = 0;
-	bullet = new Transform();
+	Transform* bullet = new Transform();
 	bullet->addChild(bulletGeo);
 	objList.push_back(bullet);
+	bulletList.push_back(bullet);
+	world->addChild(bullet);
 
-	bullet->M = fighter->M;
+	bullet->M = glm::inverse(world->M) * fighter->M;
 	bullet->M = glm::scale(bullet->M, glm::vec3(0.2f, 0.2f, 0.2f));
 	bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 6.5f));
-	bullet->draw(glm::mat4(1.0f));
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -303,13 +343,18 @@ void Window::displayCallback(GLFWwindow* window)
 	world->draw(glm::mat4(1.0f));
 	fighter->draw(glm::mat4(1.0f));
 
-	// Draw bullet 
-	if (hasBullet) {
-		bullet->draw(glm::mat4(1.0f));
-	}
+	std::vector<Transform*> collided = findCollision(bulletList, virusList);
+	if (collided.size() != 0) {
+		bulletList.erase(std::find(bulletList.begin(), bulletList.end(), collided[0]));
+		virusList.erase(std::find(virusList.begin(), virusList.end(), collided[1]));
+		world->removeChild(collided[0]);
+		world->removeChild(collided[1]);
 
-	if (hasCollision(objList)) {
-		// actually debug info is painted in hasCollision...
+		std::cout << "hit a virus!" << std::endl;
+	}
+	collided = findCollision(std::vector<Transform*>({fighter}), virusList);
+	if (collided.size() != 0 && !debugOn) {
+		glUniform1i(gameOverLoc, 1);
 	}
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
@@ -350,10 +395,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			// pause cloud
 			pauseCloud = !pauseCloud;
 			break;
-		case GLFW_KEY_R:
-			// reset cloud
-			cloudTime = 0;
-			break;
+		//case GLFW_KEY_R:
+		//	// reset cloud
+		//	cloudTime = 0;
+		//	break;
 		case GLFW_KEY_G:
 			// generate new cloud
 			cloudTime = 0;
@@ -363,6 +408,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			// switch to debug mode
 			debugOn = !debugOn;
 			break;
+		//case GLFW_KEY_R:
+		//	resetGame();
+		//	break;
+
 		}
 	}
 	else if (action == GLFW_RELEASE) {
@@ -396,26 +445,11 @@ void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int
 {
 	// Set mouseLeftPressed / mouseRightPressed when being pressed
 	// Record prevX and prevY for mouseLeftPressed with initial positions
-	//if (button == GLFW_MOUSE_BUTTON_LEFT) {
-	//	if (action == GLFW_PRESS) {
-	//		mouseLeftPressed = true;
-
-	//		glfwGetCursorPos(window, &prevX, &prevY);
-	//	}
-	//	else if (action == GLFW_RELEASE) {
-	//		mouseLeftPressed = false;
-	//	}
-	//}
-	//else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-	//	if (action == GLFW_PRESS) {
-	//		mouseRightPressed = true;
-
-	//		glfwGetCursorPos(window, &prevX, &prevY);
-	//	}
-	//	else if (action == GLFW_RELEASE) {
-	//		mouseRightPressed = false;
-	//	}
-	//}
+	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+		if (action == GLFW_PRESS) {
+			launchBullet();
+		}
+	}
 }
 
 void Window::scrollCallback(GLFWwindow* window, double xOffset, double yOffset)
@@ -440,4 +474,20 @@ glm::vec3 Window::trackBallMapping(double xPos, double yPos)
 	result[2] = sqrtf(1.001 - ((double)d) * d);
 
 	return glm::normalize(result);
+}
+
+void Window::resetGame()
+{
+	glm::vec3 eye(0, 0, 0); // Camera position.
+	glm::vec3 center(0, 0, 1); // The point we are looking at.
+	glm::vec3 up(0, 1, 0); // The up direction of the camera.
+	glm::mat4 view = glm::lookAt(eye, center, up); // View matrix, defined by eye, center and up.
+
+	objList.clear();
+	virusList.clear();
+	bulletList.clear();
+
+	initializeProgram();
+	initializeObjects();
+	glUniform1i(gameOverLoc, 0);
 }

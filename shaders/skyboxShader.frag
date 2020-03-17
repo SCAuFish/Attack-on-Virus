@@ -4,6 +4,7 @@
 // Inputs to the fragment shader are the outputs of the same name from the vertex shader.
 // Note that you do not have access to the vertex shader's default output, gl_Position.
 in vec3  TexCoords;
+in vec2 TexCoord2D;
 in vec3  colorInfo;
 
 // Following for paiting cloud
@@ -29,11 +30,12 @@ const mat3 m = mat3(0.0, 1.60,  1.20, -1.6, 0.72, -0.96, -1.2, -0.96, 1.28);
 out vec4 fragColor;
 
 uniform samplerCube skybox;
-uniform sampler2D cloud;
+uniform sampler2D sampler2d;
 
 uniform int drawSkybox;
 uniform int showCloud;
 uniform int debugOn;
+uniform int gameOver;
 
 void main()
 {
@@ -80,10 +82,11 @@ void main()
         }
     } else {
         // Use the color passed in. An alpha of 1.0f means it is not transparent.
-        fragColor = vec4(colorInfo, 1.0f);
+        fragColor = texture(sampler2d, vec2(TexCoord2D));
+        // fragColor = vec4(colorInfo, 1.0f);
     }
     
-    if (debugOn == 1){
+    if (debugOn == 1 || gameOver == 1){
         fragColor = vec4(1.0f, .0f, .0f, 1.0f);
     }
 }

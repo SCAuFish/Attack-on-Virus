@@ -88,11 +88,11 @@ unsigned int loadTexture(std::vector<char *> filenames)
 	glGenTextures(1, &textureID);
 	// Set this texture to be the one we are working with
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
+	//glActiveTexture(GL_TEXTURE1);
+	//glEnable(GL_TEXTURE_CUBE_MAP);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	twidth = theight = 1024;
 	// Load image file
 	// TODO: study about the following codes. Compare with: https://learnopengl.com/Advanced-OpenGL/Cubemaps
 	for (int i = 0; i < filenames.size(); i++) {
@@ -119,3 +119,42 @@ unsigned int loadTexture(std::vector<char *> filenames)
 	return textureID;
 }
 
+// load 2D image texture
+unsigned int load2DTexture(char* filename)
+{
+	unsigned int textureID;     // storage for one texture
+	int twidth, theight;   // texture width/height [pixels]
+	unsigned char* tdata;  // texture pixel data
+
+	// Create ID for texture
+	glGenTextures(1, &textureID);
+	// Set this texture to be the one we are working with
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	//glActiveTexture(GL_TEXTURE2);
+
+	//glEnable(GL_TEXTURE_2D);
+
+	// Load image file
+	// TODO: study about the following codes. Compare with: https://learnopengl.com/Advanced-OpenGL/Cubemaps
+	tdata = loadPPM(filename, twidth, theight);
+	if (tdata == NULL) {
+		std::cout << "Failed to load: " << filename << std::endl;
+	}
+	else {
+		// Generate the texture
+		std::cout << "Texture generated" << std::endl;
+		glTexImage2D(GL_TEXTURE_2D,
+			0, GL_RGB, twidth, theight, 0, GL_RGB, GL_UNSIGNED_BYTE, tdata);
+		delete tdata;
+	}
+
+	// Set bi-linear filtering for both minification and magnification
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_MIRRORED_REPEAT);
+
+	return textureID;
+}

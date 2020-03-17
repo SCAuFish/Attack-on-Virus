@@ -8,6 +8,7 @@
 
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
+layout (location = 2) in vec2 texcoord;
 
 // Uniform variables can be updated by fetching their location and passing values to that location
 uniform mat4 projection;
@@ -19,6 +20,7 @@ uniform float time = 0.0;
 
 out vec3 colorInfo;
 out vec3 TexCoords;
+out vec2 TexCoord2D;
 out vec3 pos;
 out vec3 fsun;
 
@@ -34,6 +36,7 @@ void main()
     // fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
     fsun = vec3(0.0,  0.1, 0.99);
     TexCoords   = position;
+    TexCoord2D  = texcoord;
     
     colorInfo   = 0.5*normalize(normal)+0.5;
 

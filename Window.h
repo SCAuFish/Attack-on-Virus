@@ -33,7 +33,7 @@
 #include "Geometry.h"
 #include "Transform.h"
 #include "robot.h"
-//#include "BezierCurve.h"
+#include "BezierCurve.h"
 #include "Cloud.h"
 
 
@@ -47,7 +47,7 @@ class Window
 public:
 	static ObjectPointerNode* head,* tail;
 	// Check collision
-	static bool hasCollision(std::vector<Transform*>);
+	// static bool hasCollision(std::vector<Transform*>);
 	// Initializes your shader program(s) and uniform variable locations
 	static bool initializeProgram();
 	// Initialize your OBJ objects here
@@ -58,6 +58,8 @@ public:
 	static GLFWwindow* createWindow(int width, int height);
 	// Is called whenever the window is resized
 	static void resizeCallback(GLFWwindow* window, int width, int height);
+	// static bool hasCollision(std::vector<Transform*> objs1, std::vector<Transform*> objs2);
+	static std::vector<Transform*> findCollision(std::vector<Transform*>& objs1, std::vector<Transform*>& objs2);
 	// Is called on idle.
 	static void idleCallback();
 	static void launchBullet();
@@ -69,6 +71,7 @@ public:
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 	static glm::vec3 trackBallMapping(double xPos, double yPos);
+	static void resetGame();
 	//unsigned int loadCubemap(std::vector<std::string> faces);
 };
 

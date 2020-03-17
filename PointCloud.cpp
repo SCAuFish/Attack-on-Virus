@@ -23,6 +23,7 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 	std::string line;
 
 	std::unordered_map<int, int> vertexToNormal;
+	std::unordered_map<int, int> vertexToTex;
 
 	while (std::getline(objFile, line)) {
 		std::istringstream lineReader(line);
@@ -42,6 +43,11 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 		if (dataType.compare("vn") == 0) {
 			lineReader >> c1 >> c2 >> c3;
 			normals.push_back(glm::vec3(c1, c2, c3));
+		}
+
+		if (dataType.compare("vt") == 0) {
+			lineReader >> c1 >> c2;
+			texCoords.push_back(glm::vec2(c1, c2));
 		}
 
 		if (dataType.compare("f") == 0) {
@@ -64,6 +70,10 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 				vertexToNormal[v2 - 1] = n2 - 1;
 				vertexToNormal[v3 - 1] = n3 - 1;
 
+				vertexToTex[v1 - 1] = t1 - 1;
+				vertexToTex[v2 - 1] = t2 - 1;
+				vertexToTex[v3 - 1] = t3 - 1;
+
 				triangles.push_back(v1 - 1);
 				triangles.push_back(v2 - 1);
 				triangles.push_back(v3 - 1);
@@ -72,13 +82,17 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 	}
 
 	if (objFormat == 1) {
-		// TODO: reorder vertex and normal
+		// TODO: reorder vertex, normal and texCoord
 		std::vector<glm::vec3> new_normals;
+		std::vector<glm::vec2> new_texCoord;
 		for (int i = 0; i < points.size(); i++) {
 			new_normals.push_back(normals[vertexToNormal[i]]);
+			new_texCoord.push_back(texCoords[vertexToTex[i]]);
 		}
 
 		normals = new_normals;
+		texCoords = new_texCoord;
+		std::cout << texCoords.size() << std::endl;
 	}
 	// Set the model matrix to an identity matrix. 
 	model = glm::mat4(1);
@@ -91,6 +105,7 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 	glGenBuffers(1, &vbo_normal);
+	glGenBuffers(1, &vbo_tex);
 	glGenBuffers(1, &ebo);
 
 	// Bind to the VAO.
@@ -112,6 +127,14 @@ PointCloud::PointCloud(std::string objFilename, GLfloat pointSize, int objFormat
 		normals.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+
+	if (texCoords.size() != 0) {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_tex);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * texCoords.size(),
+			texCoords.data(), GL_STATIC_DRAW);
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+	}
 
 	// Pass in triangle meshes
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -147,11 +170,12 @@ void PointCloud::draw()
 	glPointSize(pointSize);
 	// Draw points 
 	// glDrawArrays(GL_POINTS, 0, points.size());
-
+	glBindTexture(GL_TEXTURE_2D, this->textureId);
 	glDrawElements(GL_TRIANGLES, triangles.size(), GL_UNSIGNED_INT, 0);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void PointCloud::drawComponents(std::vector<unsigned int>& parts) {
@@ -265,6 +289,11 @@ void PointCloud::normalizeModel() {
 
 void PointCloud::setMaterial(Material::DefinedMaterial type, GLuint programId) {
 	material = new Material(programId, type);
+}
+
+void PointCloud::setTextureId(unsigned int textureId)
+{
+	this->textureId = textureId;
 }
 
 Material* PointCloud::getMaterial() {

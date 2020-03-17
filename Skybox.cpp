@@ -90,11 +90,15 @@ void Skybox::draw()
 	glBindVertexArray(vao);
 	// Draw triangles using the indices in the second VBO, which is an 
 	// elemnt array buffer.
+	//glActiveTexture(GL_TEXTURE1);
+	//glEnable(GL_TEXTURE_CUBE_MAP);
+
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glDepthMask(GL_TRUE);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void Skybox::setTextureID(unsigned int textureID) {

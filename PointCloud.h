@@ -19,16 +19,19 @@
 class PointCloud : public Object
 {
 private:
-	GLuint vao, vbo, vbo_normal, ebo;
+	GLuint vao, vbo, vbo_normal, vbo_tex, ebo;
 	GLfloat pointSize;
 
 	glm::vec3 spinAxis;
 	float spinRate;
 	float xShift, yShift, zShift;
 
+	unsigned int textureId;
+
 	Material* material;
 public:
 	std::vector<glm::vec3> points, normals;
+	std::vector<glm::vec2> texCoords;
 	std::vector<unsigned int> triangles;
 	PointCloud(std::string objFilename, GLfloat pointSize, int objFormat = 0,
 		float xShift = .0f, float yShift = .0f, float zShift = .0f);
@@ -54,6 +57,8 @@ public:
 
 	// Added function for material setting
 	void setMaterial(Material::DefinedMaterial type, GLuint programId);
+
+	void setTextureId(unsigned int);
 	Material* getMaterial();
 };
 
