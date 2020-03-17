@@ -170,7 +170,7 @@ void PointCloud::draw()
 	glPointSize(pointSize);
 	// Draw points 
 	// glDrawArrays(GL_POINTS, 0, points.size());
-	glBindTexture(GL_TEXTURE_2D, this->textureId);
+	//glBindTexture(GL_TEXTURE_2D, this->textureId);
 	glDrawElements(GL_TRIANGLES, triangles.size(), GL_UNSIGNED_INT, 0);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
@@ -291,10 +291,10 @@ void PointCloud::setMaterial(Material::DefinedMaterial type, GLuint programId) {
 	material = new Material(programId, type);
 }
 
-void PointCloud::setTextureId(unsigned int textureId)
-{
-	this->textureId = textureId;
-}
+//void PointCloud::setTextureId(unsigned int textureId)
+//{
+//	this->textureId = textureId;
+//}
 
 Material* PointCloud::getMaterial() {
 	return material;

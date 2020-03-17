@@ -10,6 +10,7 @@ std::vector<char*> textureFiles = { ".\\skybox\\right.ppm", ".\\skybox\\left.ppm
 char* virusTexture = ".\\skybox\\virus.ppm";
 char* fighterTexture = ".\\skybox\\fighter.ppm";
 char* bulletTexture = ".\\skybox\\bullet.ppm";
+char* bochoaTexture = ".\\skybox\\benochoa.ppm";
 ObjectPointerNode* Window::head, * Window::tail;
 
 //PointCloud* bunny, * dragon, * bear;
@@ -35,6 +36,7 @@ namespace
 	Transform* world;
 	Transform* robot;
 	BezierCurve* curve[5];
+	unsigned int ochoaTextureID, bulletTextureID, virusTextureID, fighterTextureID;
 	bool isMovingForward = false;
 	bool pauseCloud = false;
 	//bool debugOn = false;
@@ -119,18 +121,20 @@ bool Window::initializeObjects()
 	virusGeo->setModelLoc(modelLoc);
 
 	// load virus texture
-	unsigned int textureID = load2DTexture(virusTexture);
-	virusGeo->object->setTextureId(textureID);
+	virusTextureID = load2DTexture(virusTexture);
+	ochoaTextureID = load2DTexture(bochoaTexture);
+	// virusGeo->object->setTextureId(textureID);
 	 
 	// Create a list of random viruses
 	for (int i = 0; i < 100; i++) {
 		virus = new Transform();
 		virus->addChild(virusGeo);
 		float scale = std::rand() % 10;
-		float x_shift = std::rand() % 100 - 50;
-		float y_shift = std::rand() % 100 - 50;
-		float z_shift = std::rand() % 100 - 50;
+		float x_shift = std::rand() % 200 - 100;
+		float y_shift = std::rand() % 200 - 100;
+		float z_shift = std::rand() % 100 + 50;
 		virus->M = glm::translate(glm::vec3(x_shift, y_shift, z_shift)) * glm::scale(glm::vec3(scale, scale, scale)) * virus->M;
+		virus->setTextureId(virusTextureID);
 		objList.push_back(virus);
 		virusList.push_back(virus);
 	}
@@ -148,16 +152,18 @@ bool Window::initializeObjects()
 	fighterGeo->setModelLoc(modelLoc);
 
 	// load virus texture
-	textureID = load2DTexture(fighterTexture);
-	fighterGeo->object->setTextureId(textureID);
+	fighterTextureID = load2DTexture(fighterTexture);
+	// fighterGeo->object->setTextureId(textureID);
 
 	fighter = new Transform();
 	fighter->addChild(fighterGeo);
 	fighter->M = glm::translate(glm::vec3(0.0f, -2.0f, 5.0f)) * fighter->M;
+	fighter->setTextureId(fighterTextureID);
 	objList.push_back(fighter);
 
 	world = new Transform();
 	for (Transform* virus : virusList) {
+		std::cout << "running" << std::endl;
 		world->addChild(virus);
 	}
 
@@ -165,8 +171,8 @@ bool Window::initializeObjects()
 	bulletGeo->loadObjFile(sphereFileName, 0);
 	bulletGeo->setModelLoc(modelLoc);
 
-	textureID = load2DTexture(bulletTexture);
-	bulletGeo->object->setTextureId(textureID);
+	bulletTextureID = load2DTexture(bulletTexture);
+	// bulletGeo->object->setTextureId(textureID);
 
 	return true;
 }
@@ -313,6 +319,7 @@ void Window::launchBullet() {
 	bullet->M = glm::inverse(world->M) * fighter->M;
 	bullet->M = glm::scale(bullet->M, glm::vec3(0.2f, 0.2f, 0.2f));
 	bullet->M = glm::translate(bullet->M, glm::vec3(.0f, .0f, 6.5f));
+	bullet->setTextureId(bulletTextureID);
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -347,6 +354,7 @@ void Window::displayCallback(GLFWwindow* window)
 	if (collided.size() != 0 && !debugOn) {
 		bulletList.erase(std::find(bulletList.begin(), bulletList.end(), collided[0]));
 		virusList.erase(std::find(virusList.begin(), virusList.end(), collided[1]));
+		
 		world->removeChild(collided[0]);
 		world->removeChild(collided[1]);
 
@@ -411,7 +419,30 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 		//case GLFW_KEY_R:
 		//	resetGame();
 		//	break;
-
+		case GLFW_KEY_V:
+			//generate virus
+			std::cout << "here" << std::endl;
+			for (int i = 0; i < 5; i++) {
+				virus = new Transform();
+				virus->addChild(virusGeo);
+				float scale = std::rand() % 10;
+				float x_shift = std::rand() % 200 - 100;
+				float y_shift = std::rand() % 200 - 100;
+				float z_shift = std::rand() % 100 + 50;
+				virus->M = glm::translate(glm::vec3(x_shift, y_shift, z_shift)) * glm::scale(glm::vec3(scale, scale, scale)) * virus->M;
+				virus->setTextureId(virusTextureID);
+				objList.push_back(virus);
+				virusList.push_back(virus);
+				world->addChild (virus);
+			}
+			break;
+		case GLFW_KEY_O:
+			// recenter the camera
+			eye = glm::vec3(0, 0, 0); // Camera position.
+			center = glm::vec3(0, 0, 1); // The point we are looking at.
+			up = glm::vec3(0, 1, 0); // The up direction of the camera.
+			view = glm::lookAt(eye, center, up); // View matrix, defined by eye, center and up.
+			fighter->M = glm::translate(glm::vec3(0.0f, -2.0f, 5.0f));
 		}
 	}
 	else if (action == GLFW_RELEASE) {

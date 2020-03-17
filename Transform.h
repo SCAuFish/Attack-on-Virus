@@ -13,6 +13,7 @@ public:
 	glm::mat4 M;
 	glm::mat4(*updateFunc)(int, glm::mat4&);
 	bool hasUpdateFunc;
+	unsigned int textureId;
 	std::vector<Node*> children;
 	glm::mat4 prevAccumulatedM; // record the accumulated model for collision detection, update when draw
 
@@ -23,6 +24,7 @@ public:
 	void setModelLoc(GLuint modelLoc);
 	void update();
 	void Transform::setUpdateFunc(glm::mat4(*func_ptr)(int, glm::mat4&));
+	void setTextureId(unsigned int textureId);
 };
 
 #endif

@@ -21,6 +21,7 @@ public:
 	void draw(glm::mat4 C);
 	void changeModel(glm::mat4 C);
 	void setModelLoc(GLuint modelLoc);
+	void setTextureId(unsigned int textureId);
 	void update();
 };
 

@@ -45,6 +45,8 @@ void Transform::draw(glm::mat4 C)
 {
 	glm::mat4 accumulated = C * (this->M);
 	this->prevAccumulatedM = accumulated;
+
+	glBindTexture(GL_TEXTURE_2D, this->textureId);
 	for (Node* child : this->children) {
 		child->draw(accumulated);
 	}
@@ -73,4 +75,9 @@ void Transform::setUpdateFunc(glm::mat4(* func_ptr)(int, glm::mat4&))
 {
 	this->hasUpdateFunc = true;
 	this->updateFunc = func_ptr;
+}
+
+void Transform::setTextureId(unsigned int textureId)
+{
+	this->textureId = textureId;
 }

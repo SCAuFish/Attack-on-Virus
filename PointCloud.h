@@ -58,7 +58,7 @@ public:
 	// Added function for material setting
 	void setMaterial(Material::DefinedMaterial type, GLuint programId);
 
-	void setTextureId(unsigned int);
+	// void setTextureId(unsigned int);
 	Material* getMaterial();
 };
 
