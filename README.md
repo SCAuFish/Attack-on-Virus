@@ -7,7 +7,12 @@ Here are some updates
 1. We successfully animated the procedurally-generated cloud and incorporate the animation with the rest of the "world", which includes the fighter, coronavirus, and the backgroud skybox.
 2. We completed the implementation of collision detection. When a bullet is launched from the fighter and hits a virus, the virus disappears. We also enables the debugging functionality of coloring the overlapping area to red when two objects collide.
 3. We added textures to the fighter, coronavirus, and bullets, according to real life settings, to make the game more realistic and visually appearing.
+4. We also managed to implement triangle-mesh level collision detection. In debug mode, the colliding triangles will be colored red.
+
+
 The following screenshot shows the current interface of our game: 
+![Image of Virus](./Pictures/playtime.PNG)
+![Image of Virus](./Pictures/collision.PNG)
 
 
 # Blog March 9th
