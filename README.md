@@ -1,5 +1,6 @@
 # Introduction: Fire at Coronavirus
 This is a computer graphics project created for CSE 167 offered at UCSD. For basic functions and features, check following blogs.
+Demo video here: https://www.youtube.com/watch?v=5VMAO_oibyk
 
 # Blog March 12th
 Our project name, member and key features remain the same: Our project is a game called "Fire at Coronavirus". As SARS-COV-2 virus is spreading globally, we need to recruit someone who can help fight the virus. The player will control a nanometer-level fighter to eliminate the virus in the air. Player as pilot needs to control the craft to avoid the virus and fire nano-bullets to destroy them.\
