@@ -269,6 +269,24 @@ void moveForward() {
 	// skybox->model = glm::translate(glm::vec3(-.1 * dir[0], -.1 * dir[1], -.1 * dir[2])) * skybox->model;
 }
 
+void moveLeft() {
+	// Move the world to the opposite direction of aircraft moving
+	glm::vec3 dir = glm::normalize(center - eye);
+	world->M = glm::translate(-0.1f * glm::normalize(glm::cross(up, dir))) * world->M;
+}
+
+void moveRight() {
+	// Move the world to the opposite direction of aircraft moving
+	glm::vec3 dir = glm::normalize(center - eye);
+	world->M = glm::translate(0.1f * glm::normalize(glm::cross(up, dir))) * world->M;
+}
+
+void moveBack() {
+	// Move the world to the opposite direction of aircraft moving
+	glm::vec3 dir = glm::normalize(center - eye);
+	world->M = glm::translate(glm::vec3(.1 * dir[0], .1 * dir[1], .1 * dir[2])) * world->M;
+}
+
 std::vector<Transform*> Window::findCollision(std::vector<Transform*>& objs1, std::vector<Transform*>& objs2)
 {
 	for (Transform* lhs : objs1) {
@@ -385,6 +403,15 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			break;
 		case GLFW_KEY_W:
 			isMovingForward = true;
+			break;
+		case GLFW_KEY_A:
+			moveLeft();
+			break;
+		case GLFW_KEY_D:
+			moveRight();
+			break;
+		case GLFW_KEY_S:
+			moveBack();
 			break;
 		case GLFW_KEY_ENTER:
 			launchBullet();
